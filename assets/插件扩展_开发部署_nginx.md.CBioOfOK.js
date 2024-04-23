@@ -1,0 +1,1 @@
+import{_ as e,c as t,o as n}from"./chunks/framework.CsSpqKUs.js";const m=JSON.parse('{"title":"","description":"","frontmatter":{},"headers":[],"relativePath":"插件扩展/开发部署/nginx.md","filePath":"插件扩展/开发部署/nginx.md","lastUpdated":1713801493000}'),a={name:"插件扩展/开发部署/nginx.md"};function r(o,s,c,i,d,p){return n(),t("div")}const f=e(a,[["render",r]]);export{m as __pageData,f as default};
