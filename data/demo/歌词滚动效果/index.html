@@ -1,0 +1,231 @@
+<!--
+ * @Author: yhx 2045399856@qq.com
+ * @Date: 2024-11-09 20:54:24
+ * @LastEditTime: 2024-11-10 01:06:54
+ * @FilePath: \noteplus\docs\demo\歌词滚动效果.html
+ * @Description: 
+ * 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌词滚动效果</title>
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            background-color: #000;
+            font-family: serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lyrics-scrolling {
+            text-align: center;
+            width: 100%;
+        }
+
+        .lyrics-scrolling audio {
+            width: 500px;
+            margin-top: 20px;
+        }
+
+        .lyrics-scrolling .container {
+            height: 480px;
+            width: 500px;
+            margin: auto;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .lyrics-scrolling .container .lrc {
+            transition: transform .2s;
+        }
+
+        .lyrics-scrolling .container .lrc li {
+            height: 30px;
+            line-height: 30px;
+            color: #666;
+            transition: transform .2s;
+        }
+
+        .lyrics-scrolling .container .lrc li.active {
+            transform: scale(1.2);
+            color: #fff;
+        }
+
+        .lyrics-scrolling .container .lrc li span.active {
+            color: #0ff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="lyrics-scrolling">
+
+        <div class="container">
+            <ul class="lrc">
+            </ul>
+        </div>
+        <audio src="./童话镇-陈一发儿.mp3" controls></audio>
+    </div>
+
+    <script>
+        /**
+         * @description 获取歌词
+         * @return string
+        */
+        function getLrcs() {
+            return `[00:00.00]童话镇
+[00:11.68]作词
+[00:17.53]作曲
+[00:23.37]
+[00:23.75]听说白雪公主在逃跑
+[00:26.77]小红帽在担心大灰狼
+[00:30.20]听说疯帽喜欢爱丽丝
+[00:33.65]丑小鸭会变成白天鹅
+[00:37.04]听说彼得潘总长不大
+[00:40.51]杰克他有竖琴和魔法
+[00:43.93]听说森林里有糖果屋
+[00:47.19]灰姑娘丢了心爱的玻璃鞋
+[00:50.79]只有睿智的河水知道
+[00:54.09]白雪是因为贪玩跑出了城堡
+[00:57.63]小红帽有件抑制自己
+[01:01.11]变成狼的大红袍
+[01:04.09]总有一条蜿蜒在童话镇里七彩的河
+[01:11.40]沾染魔法的乖张气息
+[01:14.84]却又在爱里曲折
+[01:18.21]川流不息扬起水花
+[01:21.34]又卷入一帘时光入水
+[01:25.13]让所有很久很久以前
+[01:28.38]都走到幸福结局的时刻
+[01:47.40]听说睡美人被埋藏
+[01:50.76]小人鱼在眺望金殿堂
+[01:54.25]听说阿波罗变成金乌
+[01:57.68]草原有奔跑的剑齿虎
+[02:01.12]听说匹诺曹总说着谎
+[02:04.58]侏儒怪拥有宝石满箱
+[02:07.97]听说悬崖有棵长生树
+[02:11.26]红鞋子不知疲倦地在跳舞
+[02:14.85]只有睿智的河水知道
+[02:18.10]睡美人逃避了生活的煎熬
+[02:21.70]小人鱼把阳光抹成眼影
+[02:25.12]投进泡沫的怀抱
+[02:28.12]总有一条蜿蜒在童话镇里七彩的河
+[02:35.43]沾染魔法的乖张气息
+[02:38.87]却又在爱里曲折
+[02:42.24]川流不息扬起水花
+[02:45.35]又卷入一帘时光入水
+[02:49.16]让所有很久很久以前
+[02:52.43]都走到幸福结局的时刻
+[02:55.55]总有一条蜿蜒在童话镇里梦幻的河
+[03:02.86]分隔了理想分隔现实
+[03:06.31]又在前方的山口汇合
+[03:09.69]川流不息扬起水花
+[03:12.80]又卷入一帘时光入水
+[03:16.58]让所有很久很久以前
+[03:19.85]都走到幸福结局 的时刻
+[03:23.36]又陌生 啊 啊 啊
+[03:30.82]呜 呜 呜 呜
+[03:37.82]啊 啊 啊 啊
+[03:44.59]呜 呜 呜 呜
+[03:51.40]啊 啊 啊 啊
+[03:58.31]呜 呜 呜 呜
+[04:05.11]啊 啊 啊 啊
+[04:12.08]啊 呜 啊 呜
+`
+        }
+
+
+        /**
+         * @description 换算歌词时间
+         * return number
+        */
+        function conversionTime(str) {
+            let time = str.split(':')
+            return (+time[0]) * 60 + +time[1].split('.')[0]
+        }
+
+        let lrcTime = 0; // 记录lrc时间
+
+        const doms = {
+            ul: document.querySelector('.container .lrc'),
+            audio: document.querySelector('audio')
+        }
+
+        const li = {
+            height: 30
+        }
+        const container = {
+            height: 480
+        }
+
+        let lrcData = null
+
+        /**
+         * @description 初始化页面
+         *
+        */
+        function init() {
+            // 处理歌词数据
+            const lrcsContent = getLrcs()
+            lrcData = lrcsContent.split('\n').filter(item => item && item.split(']')[1])
+                .map((item) => ({ time: conversionTime(item.split(']')[0].replace('[', '')), ctn: item.split(']')[1] }))
+
+            // 将歌词填充进dom
+            let strlis = ""
+            lrcData.forEach((item, i) => {
+                strlis += `<li index="${i}">${item.ctn}</li>`
+            })
+            console.log(lrcData);
+
+            doms.ul.innerHTML = strlis
+        }
+
+        init()
+        /**
+         * @description 滚动到某一条数据 并高亮显示
+         */
+        function setScrollLi(currentTime) {
+            let curIndex = 0
+            const curData = lrcData.find((item, index) => {
+                curIndex = index - 1
+                return item.time >= currentTime
+            })
+
+            const liDoms = document.querySelectorAll('.lrc li')
+            const historyActiveDom = document.querySelector('.lrc li.active')
+            const curLi = liDoms[curIndex]
+
+            historyActiveDom?.classList.remove('active') // 删除历史激活状态
+            document.querySelectorAll('.container span.active').forEach((item) => { // 清除局部高亮
+                item?.classList.remove('active')
+            })
+            curLi?.classList.add('active') // 添加高亮
+            let top = - li.height * (curIndex + 1) + container.height / 2 // 滚动偏移
+            if (top > 0) {
+                top = 0
+            }
+            doms.ul.style.transform = `translateY(${top}px)`
+
+        }
+
+        doms.audio.addEventListener('timeupdate', function () {
+            const currentTime = this.currentTime
+            setScrollLi(currentTime)
+        })
+
+    </script>
+</body>
+
+</html>
