@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>处理事件</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 24rem;
+        }
+
+        .leaflet-control-attribution {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map" class="w-full h-96"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const map = L.map('map').setView([51.505, -0.09], 13);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            const popup = L.popup();
+            popup.setContent('A pretty CSS3 popup.<br> Easily customizable.').setLatLng([51.505, -0.09]).openOn(map);
+
+            L.marker([51.505, -0.09]).addTo(map).bindPopup(popup).openPopup();
+            L.circle([51.508, -0.11], 500, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.5
+            }).addTo(map).bindPopup('我是圆').openPopup();
+
+            L.polygon([
+                [51.509, -0.08],
+                [51.503, -0.06],
+                [51.51, -0.047]
+            ]).addTo(map).bindPopup('我是多边形', { autoPan: true }).openPopup();
+
+            map.on('click', function (e) {
+                L.popup().setLatLng(e.latlng).setContent('你点击了地图' + e.latlng.toString()).openOn(map);
+            });
+        });
+    </script>
+</body>
+
+</html>
