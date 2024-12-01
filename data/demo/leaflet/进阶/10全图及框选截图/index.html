@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>地图截图示例</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .control-panel {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: transform 0.3s ease;
+      }
+
+      .control-panel:hover {
+        transform: translateY(-2px);
+      }
+
+      .control-button {
+        display: block;
+        width: 100%;
+        margin: 8px 0;
+        padding: 10px 20px;
+        background: linear-gradient(145deg, #2196f3, #1976d2);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+      }
+
+      .control-button:hover {
+        background: linear-gradient(145deg, #1e88e5, #1565c0);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+      }
+
+      .control-button:active {
+        transform: translateY(1px);
+      }
+
+      .control-button.active {
+        background: linear-gradient(145deg, #4caf50, #388e3c);
+      }
+
+      .selection-box {
+        border: 2px solid #2196f3;
+        background: rgba(33, 150, 243, 0.1);
+        position: absolute;
+        pointer-events: none;
+        border-radius: 4px;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+        animation: pulse 2s infinite;
+        z-index: 1000;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(33, 150, 243, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+        }
+      }
+
+      .tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 1001;
+        display: none;
+      }
+
+      .selection-info {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        display: none;
+        z-index: 1001;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <div class="control-panel">
+      <button id="fullScreenshot" class="control-button">📸 全图截图</button>
+      <button id="areaScreenshot" class="control-button">✂️ 框选截图</button>
+    </div>
+    <div class="tooltip"></div>
+    <div class="selection-info"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const urlLayer =
+          "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd";
+
+        let map = L.map("map", {
+          center: [39.094899, 117.33083],
+          zoom: 12,
+          zoomControl: true,
+          doubleClickZoom: false,
+          attributionControl: false,
+        });
+
+        // 底图
+        const baseLayer = L.tileLayer(urlLayer).addTo(map);
+
+        const tooltip = document.querySelector(".tooltip");
+        const selectionInfo = document.querySelector(".selection-info");
+
+        // 全图截图
+        const fullScreenshotBtn = document.getElementById("fullScreenshot");
+        fullScreenshotBtn.addEventListener("click", async function () {
+          this.disabled = true;
+          this.style.background = "linear-gradient(145deg, #4CAF50, #388E3C)";
+          this.textContent = "📸 截图中...";
+
+          try {
+            const canvas = await html2canvas(document.querySelector("#map"));
+            const link = document.createElement("a");
+            link.download = `地图全图截图_${new Date().toLocaleString()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+          } catch (error) {
+            alert("截图失败，请重试");
+          } finally {
+            this.disabled = false;
+            this.style.background = "";
+            this.textContent = "📸 全图截图";
+          }
+        });
+
+        // 框选截图
+        let isSelecting = false;
+        let startPoint;
+        let selectionBox;
+        let isDrawing = false;
+
+        const areaScreenshotBtn = document.getElementById("areaScreenshot");
+        areaScreenshotBtn.addEventListener("click", function () {
+          if (isSelecting) {
+            // 取消框选模式
+            cancelSelection();
+            return;
+          }
+
+          // 开启框选模式
+          isSelecting = true;
+          this.classList.add("active");
+          this.textContent = "❌ 取消框选";
+          map.dragging.disable();
+          map.getContainer().style.cursor = "crosshair";
+          tooltip.style.display = "block";
+          tooltip.textContent = "按住鼠标左键拖动选择区域，ESC取消";
+        });
+
+        // ESC键取消框选
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && isSelecting) {
+            cancelSelection();
+          }
+        });
+
+        function cancelSelection() {
+          isSelecting = false;
+          isDrawing = false;
+          map.dragging.enable();
+          map.getContainer().style.cursor = "";
+          areaScreenshotBtn.classList.remove("active");
+          areaScreenshotBtn.textContent = "✂️ 框选截图";
+          tooltip.style.display = "none";
+          selectionInfo.style.display = "none";
+          if (selectionBox && selectionBox.parentNode) {
+            selectionBox.parentNode.removeChild(selectionBox);
+          }
+          selectionBox = null;
+          startPoint = null;
+        }
+
+        map.on("mousedown", function (e) {
+          if (!isSelecting) return;
+          isDrawing = true;
+          startPoint = e.containerPoint;
+
+          if (selectionBox && selectionBox.parentNode) {
+            selectionBox.parentNode.removeChild(selectionBox);
+          }
+
+          selectionBox = L.DomUtil.create(
+            "div",
+            "selection-box",
+            map.getContainer()
+          );
+          selectionBox.style.left = startPoint.x + "px";
+          selectionBox.style.top = startPoint.y + "px";
+        });
+
+        map.on("mousemove", function (e) {
+          if (!isSelecting) return;
+
+          tooltip.style.left = e.originalEvent.pageX + 10 + "px";
+          tooltip.style.top = e.originalEvent.pageY + 10 + "px";
+
+          if (!isDrawing || !startPoint) return;
+
+          const currentPoint = e.containerPoint;
+          const bounds = {
+            left: Math.min(startPoint.x, currentPoint.x),
+            top: Math.min(startPoint.y, currentPoint.y),
+            width: Math.abs(currentPoint.x - startPoint.x),
+            height: Math.abs(currentPoint.y - startPoint.y),
+          };
+
+          selectionBox.style.left = bounds.left + "px";
+          selectionBox.style.top = bounds.top + "px";
+          selectionBox.style.width = bounds.width + "px";
+          selectionBox.style.height = bounds.height + "px";
+
+          // 显示选区尺寸信息
+          selectionInfo.style.display = "block";
+          selectionInfo.textContent = `选区大小: ${bounds.width} × ${bounds.height} 像素`;
+        });
+
+        map.on("mouseup", async function () {
+          if (!isSelecting || !isDrawing || !startPoint || !selectionBox)
+            return;
+          isDrawing = false;
+
+          const bounds = selectionBox.getBoundingClientRect();
+          if (bounds.width < 50 || bounds.height < 50) {
+            selectionInfo.textContent = "选区太小，请重新选择(最小 50×50 像素)";
+            return;
+          }
+
+          try {
+            selectionInfo.textContent = "正在生成截图...";
+
+            // 临时隐藏选择框和蒙层
+            selectionBox.style.display = "none";
+
+            const canvas = await html2canvas(document.querySelector("#map"), {
+              x: bounds.left,
+              y: bounds.top,
+              width: bounds.width,
+              height: bounds.height,
+              allowTaint: false,
+              useCORS: true,
+            });
+
+            // 恢复选择框显示
+            selectionBox.style.display = "block";
+
+            const link = document.createElement("a");
+            link.download = `地图区域截图_${new Date().toLocaleString()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+
+            cancelSelection();
+          } catch (error) {
+            selectionInfo.textContent = "截图失败，请重试";
+            setTimeout(cancelSelection, 2000);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
