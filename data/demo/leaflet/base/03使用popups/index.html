@@ -34,7 +34,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const map = L.map('map').setView([51.505, -0.09], 13);
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(map);
 
             // 创建弹窗
             const popup = L.popup();
@@ -42,20 +42,20 @@
             popup.setContent('A pretty CSS3 popup.<br> Easily customizable.').setLatLng([51.505, -0.09]).openOn(map);
 
             // 添加矢量标记 到地图上，并绑定弹窗
-            L.marker([51.505, -0.09]).addTo(map).bindPopup(popup).openPopup();
+            L.marker([51.505, -0.09]).addTo(map).bindPopup(popup);
             // 添加圆 
             L.circle([51.508, -0.11], 500, {
                 color: 'red',
                 fillColor: '#f03',
                 fillOpacity: 0.5
-            }).addTo(map).bindPopup('我是圆').openPopup();
+            }).addTo(map).bindPopup('我是圆');
 
             // 添加多边形
             L.polygon([
                 [51.509, -0.08],
                 [51.503, -0.06],
                 [51.51, -0.047]
-            ]).addTo(map).bindPopup('我是多边形', { autoPan: true }).openPopup();
+            ]).addTo(map).bindPopup('我是多边形', { autoPan: true });
         });
     </script>
 </body>

@@ -34,23 +34,23 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const map = L.map('map').setView([51.505, -0.09], 13);
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(map);
 
             const popup = L.popup();
             popup.setContent('A pretty CSS3 popup.<br> Easily customizable.').setLatLng([51.505, -0.09]).openOn(map);
 
-            L.marker([51.505, -0.09]).addTo(map).bindPopup(popup).openPopup();
+            L.marker([51.505, -0.09]).addTo(map).bindPopup(popup);
             L.circle([51.508, -0.11], 500, {
                 color: 'red',
                 fillColor: '#f03',
                 fillOpacity: 0.5
-            }).addTo(map).bindPopup('我是圆').openPopup();
+            }).addTo(map).bindPopup('我是圆');
 
             L.polygon([
                 [51.509, -0.08],
                 [51.503, -0.06],
                 [51.51, -0.047]
-            ]).addTo(map).bindPopup('我是多边形', { autoPan: true }).openPopup();
+            ]).addTo(map).bindPopup('我是多边形', { autoPan: true });
 
             map.on('click', function (e) {
                 L.popup().setLatLng(e.latlng).setContent('你点击了地图' + e.latlng.toString()).openOn(map);

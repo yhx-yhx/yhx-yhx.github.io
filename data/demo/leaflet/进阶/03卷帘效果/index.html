@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>卷帘效果示例</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-side-by-side/leaflet-side-by-side.css"
+    />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="./leaflet-side-by-side.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const urlLayer =
+          "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd";
+
+        //   影像
+        const urlLayer2 =
+          "http://t0.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd";
+        let map = L.map("map", {
+          center: [39.094899, 117.33083], // 天津
+          zoom: 12, // 缩放比列
+          zoomControl: true,
+          doubleClickZoom: false, // 禁用双击放大
+          attributionControl: false, // 不展示版权信息
+        });
+
+        // 底图
+        const baseLayer1 = L.tileLayer(urlLayer, {
+          maxZoom: 18,
+          minZoom: 0,
+          attribution: "天地图",
+          subdomains: ["0", "1", "2", "3", "4", "5", "6", "7"],
+        }).addTo(map);
+
+        // 影像
+        const baseLayer2 = L.tileLayer(urlLayer2, {
+          maxZoom: 18,
+          minZoom: 0,
+          attribution: "天地图",
+          subdomains: ["0", "1", "2", "3", "4", "5", "6", "7"],
+        }).addTo(map);
+
+        // 创建卷帘效果
+        const sideBySide = L.control
+          .sideBySide(baseLayer1, baseLayer2)
+          .addTo(map);
+      });
+    </script>
+  </body>
+</html>
+<!-- End Generation Here -->
