@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>测量工具示例</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"
+    />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const urlLayer =
+          "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd";
+
+        let map = L.map("map", {
+          center: [39.094899, 117.33083], // 天津
+          zoom: 12, // 缩放比列
+          zoomControl: true,
+          doubleClickZoom: false, // 禁用双击放大
+          attributionControl: false, // 不展示版权信息
+        });
+
+        // 底图
+        const baseLayer = L.tileLayer(urlLayer).addTo(map);
+
+        // https://github.com/ljagis/leaflet-measure/issues/171#issuecomment-1137483548
+        // 解决点击地图改变 center 的问题
+        L.Control.Measure.include({
+          // set icon on the capture marker
+          _setCaptureMarkerIcon: function () {
+            // disable autopan
+            this._captureMarker.options.autoPanOnFocus = false;
+
+            // default function
+            this._captureMarker.setIcon(
+              L.divIcon({
+                iconSize: this._map.getSize().multiplyBy(2),
+              })
+            );
+          },
+        });
+
+        // 添加测量控件
+        const measureControl = new L.Control.Measure({
+          position: "topright",
+        });
+        measureControl.addTo(map);
+      });
+    </script>
+  </body>
+</html>
