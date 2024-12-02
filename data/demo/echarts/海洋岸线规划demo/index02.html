@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>江苏省地图</title>
+    <script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" style="width: 100%; height: 100vh"></div>
+    <script type="text/javascript">
+      var myChart = echarts.init(document.getElementById("main"));
+
+      const mockData = [
+        {
+          name: "连云港市",
+          value: [119.4952581, 34.81775635],
+          itemStyle: { color: "#2f54eb" },
+        },
+        {
+          name: "南通市",
+          value: [121.4466322, 32.38731367],
+          itemStyle: { color: "#13c2c2" },
+        },
+        {
+          name: "盐城市",
+          value: [120.9849168, 33.12935195],
+          itemStyle: { color: "#1890ff" },
+        },
+      ];
+
+      fetch("https://geo.datav.aliyun.com/areas_v3/bound/320000_full.json")
+        .then((response) => response.json())
+        .then((jiangsuJson) => {
+          echarts.registerMap("jiangsu", jiangsuJson);
+
+          var option = {
+            backgroundColor: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                {
+                  offset: 0,
+                  color: "#f0f5ff",
+                },
+                {
+                  offset: 1,
+                  color: "#d6e4ff",
+                },
+              ],
+            },
+            geo: {
+              map: "jiangsu",
+              aspectScale: 0.75,
+              zoom: 1.1,
+              roam: false,
+              itemStyle: {
+                // normal: {
+                //   areaColor: {
+                //     type: "linear",
+                //     x: 0,
+                //     y: 0,
+                //     x2: 0,
+                //     y2: 1,
+                //     colorStops: [
+                //       {
+                //         offset: 0,
+                //         color: "rgba(24,144,255,0.2)",
+                //       },
+                //       {
+                //         offset: 1,
+                //         color: "rgba(47,84,235,0.2)",
+                //       },
+                //     ],
+                //   },
+                //   shadowColor: "rgba(19,194,194,0.3)",
+                //   shadowBlur: 20,
+                //   shadowOffsetX: 5,
+                //   shadowOffsetY: 15,
+                // },
+                normal: {
+                  areaColor: {
+                    type: "radial",
+                    x: 0.5,
+                    y: 0.5,
+                    r: 0.8,
+                    colorStops: [
+                      {
+                        offset: 0,
+                        color: "#09132c", // 0% 处的颜色
+                      },
+                      {
+                        offset: 1,
+                        color: "#274d68", // 100% 处的颜色
+                      },
+                    ],
+                    globalCoord: true, // 缺省为 false
+                  },
+                  shadowColor: "rgb(58,115,192)",
+                  shadowOffsetX: 10,
+                  shadowOffsetY: 11,
+                },
+                emphasis: {
+                  areaColor: "#2AB8FF",
+                  borderWidth: 0,
+                  color: "green",
+                  label: {
+                    show: false,
+                  },
+                },
+              },
+              light: {
+                main: {
+                  intensity: 1,
+                  shadow: true,
+                  alpha: 30,
+                  beta: 40,
+                },
+              },
+            },
+            series: [
+              {
+                type: "map",
+                map: "jiangsu",
+                geoIndex: 0,
+                label: {
+                  normal: {
+                    show: true,
+                    textStyle: {
+                      color: "#1DE9B6",
+                    },
+                  },
+                  emphasis: {
+                    textStyle: {
+                      color: "rgb(183,185,14)",
+                    },
+                  },
+                },
+                itemStyle: {
+                  normal: {
+                    borderColor: "rgb(147, 235, 248)",
+                    borderWidth: 1,
+                    areaColor: {
+                      type: "radial",
+                      x: 0.5,
+                      y: 0.5,
+                      r: 0.8,
+                      colorStops: [
+                        {
+                          offset: 0,
+                          color: "#09132c", // 0% 处的颜色
+                        },
+                        {
+                          offset: 1,
+                          color: "#274d68", // 100% 处的颜色
+                        },
+                      ],
+                      globalCoord: true, // 缺省为 false
+                    },
+                  },
+                  emphasis: {
+                    areaColor: "rgb(46,229,206)",
+                    //    shadowColor: 'rgb(12,25,50)',
+                    borderWidth: 0.1,
+                  },
+                },
+              },
+              {
+                type: "effectScatter",
+                coordinateSystem: "geo",
+                showEffectOn: "render",
+                zlevel: 2,
+                rippleEffect: {
+                  period: 15,
+                  scale: 4,
+                  brushType: "fill",
+                },
+                hoverAnimation: true,
+                itemStyle: {
+                  normal: {
+                    color: "#13c2c2",
+                    shadowBlur: 10,
+                    shadowColor: "#333",
+                  },
+                },
+                data: mockData.map((item) => ({
+                  name: item.name,
+                  value: [...item.value],
+                  itemStyle: {
+                    normal: {
+                      color: {
+                        type: "radial",
+                        x: 0.5,
+                        y: 0.5,
+                        r: 0.5,
+                        colorStops: [
+                          {
+                            offset: 0,
+                            color: "rgba(19,194,194,0.8)",
+                          },
+                          {
+                            offset: 0.8,
+                            color: "rgba(19,194,194,0.5)",
+                          },
+                          {
+                            offset: 1,
+                            color: "rgba(19,194,194,0)",
+                          },
+                        ],
+                      },
+                    },
+                  },
+                })),
+                symbolSize: 20,
+                label: {
+                  normal: {
+                    show: true,
+                    formatter: "{b}",
+                    position: "right",
+                    textStyle: {
+                      color: "#2f54eb",
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      textShadowColor: "rgba(0,0,0,0.3)",
+                      textShadowBlur: 10,
+                    },
+                  },
+                },
+              },
+            ],
+          };
+
+          myChart.setOption(option);
+        });
+
+      window.addEventListener("resize", function () {
+        myChart.resize();
+      });
+      window.addEventListener("beforeunload", function () {
+        myChart.dispose();
+      });
+    </script>
+  </body>
+</html>

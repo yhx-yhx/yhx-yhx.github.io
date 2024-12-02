@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaflet与ECharts结合示例</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .chart-popup {
+        width: 300px;
+        height: 300px;
+      }
+
+      .custom-marker-icon {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #2196f3, #1976d2);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+
+      .custom-marker-icon:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化地图
+        const map = L.map("map", {
+          center: [39.11967296689395, 117.18704223632814],
+          zoom: 12,
+          zoomControl: true,
+          attributionControl: false,
+        });
+
+        // 添加底图
+        const urlLayer =
+          "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd";
+        L.tileLayer(urlLayer).addTo(map);
+
+        // 模拟数据
+        const data = [
+          {
+            name: "和平区",
+            location: [39.117, 117.215],
+            population: [
+              { value: 235, name: "0-18岁" },
+              { value: 274, name: "19-35岁" },
+              { value: 310, name: "36-60岁" },
+              { value: 335, name: "60岁以上" },
+            ],
+          },
+          {
+            name: "河西区",
+            location: [39.109, 117.223],
+            population: [
+              { value: 154, name: "0-18岁" },
+              { value: 285, name: "19-35岁" },
+              { value: 246, name: "36-60岁" },
+              { value: 178, name: "60岁以上" },
+            ],
+          },
+          {
+            name: "南开区",
+            location: [39.138, 117.15],
+            population: [
+              { value: 187, name: "0-18岁" },
+              { value: 356, name: "19-35岁" },
+              { value: 298, name: "36-60岁" },
+              { value: 265, name: "60岁以上" },
+            ],
+          },
+        ];
+
+        // 创建自定义图标
+        const createCustomIcon = (text) => {
+          return L.divIcon({
+            className: "custom-marker-icon",
+            html: `<span>📊</span>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          });
+        };
+
+        // 创建自定义图表弹窗
+        data.forEach((item) => {
+          const marker = L.marker(item.location, {
+            icon: createCustomIcon(item.name),
+          }).addTo(map);
+
+          const popupContent = document.createElement("div");
+          popupContent.className = "chart-popup";
+
+          const popup = L.popup({
+            maxWidth: 320,
+            minWidth: 320,
+            maxHeight: 320,
+            autoPan: true,
+            closeButton: true,
+            className: "custom-popup",
+          }).setContent(popupContent);
+
+          marker.bindPopup(popup);
+
+          marker.on("popupopen", () => {
+            const chart = echarts.init(popupContent);
+            const option = {
+              title: {
+                text: `${item.name}人口年龄分布`,
+                left: "center",
+                top: 10,
+                textStyle: {
+                  fontSize: 14,
+                },
+              },
+              tooltip: {
+                trigger: "item",
+                formatter: "{a} <br/>{b}: {c} ({d}%)",
+              },
+              legend: {
+                orient: "vertical",
+                left: 10,
+                top: "center",
+              },
+              series: [
+                {
+                  name: "年龄分布",
+                  type: "pie",
+                  radius: ["40%", "70%"],
+                  avoidLabelOverlap: false,
+                  itemStyle: {
+                    borderRadius: 10,
+                    borderColor: "#fff",
+                    borderWidth: 2,
+                  },
+                  label: {
+                    show: false,
+                    position: "center",
+                  },
+                  emphasis: {
+                    label: {
+                      show: true,
+                      fontSize: "12",
+                      fontWeight: "bold",
+                    },
+                  },
+                  labelLine: {
+                    show: false,
+                  },
+                  data: item.population,
+                },
+              ],
+            };
+            chart.setOption(option);
+          });
+
+          marker.on("popupclose", () => {
+            const chart = echarts.getInstanceByDom(popupContent);
+            if (chart) {
+              chart.dispose();
+            }
+          });
+        });
+
+        map.on("click", function (e) {
+          console.log(e.latlng);
+        });
+      });
+    </script>
+  </body>
+</html>
