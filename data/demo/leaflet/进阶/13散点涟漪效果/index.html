@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>散点涟漪效果</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100vh;
+        width: 100%;
+        background: #f5f5f5;
+      }
+      .ripple-marker {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(33, 150, 243, 0.8);
+        position: relative;
+        box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3),
+          0 0 10px rgba(33, 150, 243, 0.5);
+      }
+      .ripple-marker::before,
+      .ripple-marker::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(33, 150, 243, 0.6);
+        transform: translate(-50%, -50%);
+      }
+      .ripple-marker::before {
+        animation: ripple 2s infinite ease-out;
+      }
+      .ripple-marker::after {
+        animation: ripple 2s infinite ease-out 0.5s;
+      }
+      @keyframes ripple {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(3.5);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      // 初始化地图
+      var map = L.map("map", {
+        zoomControl: false,
+        attributionControl: false,
+      }).setView([39.9042, 116.4074], 12);
+
+      // 添加底图
+      L.tileLayer(
+        "http://t{s}.tianditu.gov.cn/vec_w/wmts?layer=vec&style=default&tilematrixset=w&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=d32c6748c80f81a44acd8633cea41dfd",
+        {
+          subdomains: ["0", "1", "2", "3", "4", "5", "6", "7"],
+          attribution: "&copy; 天地图",
+        }
+      ).addTo(map);
+
+      // 自定义涟漪图标
+      var RippleIcon = L.DivIcon.extend({
+        options: {
+          className: "ripple-marker",
+          iconSize: [20, 20],
+        },
+      });
+
+      // 创建多个带涟漪效果的标记点
+      var points = [
+        [39.9042, 116.4074],
+        [39.9142, 116.4174],
+        [39.8942, 116.3974],
+      ];
+
+      points.forEach(function (point) {
+        var marker = L.marker(point, {
+          icon: new RippleIcon(),
+        }).addTo(map);
+      });
+    </script>
+  </body>
+</html>
