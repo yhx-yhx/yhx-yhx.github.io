@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>控件</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .ol-mouse-position {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        top: unset;
+        color: #111;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 创建地图
+        const map = new ol.Map({
+          target: "map",
+          layers: [
+            new ol.layer.Tile({
+              source: new ol.source.XYZ({
+                url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+              }),
+            }),
+          ],
+          view: new ol.View({
+            center: ol.proj.fromLonLat([117.33083, 39.094899]), // 天津
+            zoom: 4,
+          }),
+          controls: [
+            // 添加比例尺控件
+            new ol.control.ScaleLine(),
+            // 添加缩放控件
+            new ol.control.Zoom(),
+            // 添加缩放滑块控件
+            new ol.control.ZoomSlider(),
+            // 添加全屏控件
+            new ol.control.FullScreen(),
+            // 添加鼠标位置控件
+            new ol.control.MousePosition({
+              coordinateFormat: ol.coordinate.createStringXY(4),
+              projection: "EPSG:4326",
+              className: "ol-mouse-position",
+            }),
+            // 添加旋转控件
+            new ol.control.Rotate(),
+          ],
+        });
+
+        // 添加影像图层
+        const satelliteLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+          visible: false,
+        });
+        map.addLayer(satelliteLayer);
+      });
+    </script>
+  </body>
+</html>

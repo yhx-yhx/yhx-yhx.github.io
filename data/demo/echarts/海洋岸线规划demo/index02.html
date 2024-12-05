@@ -41,89 +41,58 @@
           echarts.registerMap("jiangsu", jiangsuJson);
 
           var option = {
-            backgroundColor: {
-              type: "linear",
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [
-                {
-                  offset: 0,
-                  color: "#f0f5ff",
-                },
-                {
-                  offset: 1,
-                  color: "#d6e4ff",
-                },
-              ],
+            title: {
+              text: "海洋开发利用重心  ",
+              left: "center",
             },
             geo: {
               map: "jiangsu",
-              aspectScale: 0.75,
-              zoom: 1.1,
+              aspectScale: 0.85,
+              layoutCenter: ["50%", "50%"], //地图位置
+              layoutSize: "100%",
               roam: false,
               itemStyle: {
-                // normal: {
-                //   areaColor: {
-                //     type: "linear",
-                //     x: 0,
-                //     y: 0,
-                //     x2: 0,
-                //     y2: 1,
-                //     colorStops: [
-                //       {
-                //         offset: 0,
-                //         color: "rgba(24,144,255,0.2)",
-                //       },
-                //       {
-                //         offset: 1,
-                //         color: "rgba(47,84,235,0.2)",
-                //       },
-                //     ],
-                //   },
-                //   shadowColor: "rgba(19,194,194,0.3)",
-                //   shadowBlur: 20,
-                //   shadowOffsetX: 5,
-                //   shadowOffsetY: 15,
-                // },
-                normal: {
-                  areaColor: {
-                    type: "radial",
-                    x: 0.5,
-                    y: 0.5,
-                    r: 0.8,
-                    colorStops: [
-                      {
-                        offset: 0,
-                        color: "#09132c", // 0% 处的颜色
-                      },
-                      {
-                        offset: 1,
-                        color: "#274d68", // 100% 处的颜色
-                      },
-                    ],
-                    globalCoord: true, // 缺省为 false
-                  },
-                  shadowColor: "rgb(58,115,192)",
-                  shadowOffsetX: 10,
-                  shadowOffsetY: 11,
+                areaColor: {
+                  type: "linear-gradient",
+                  x: 0,
+                  y: 400,
+                  x2: 0,
+                  y2: 0,
+                  colorStops: [
+                    {
+                      offset: 0,
+                      color: "rgba(64,158,255,0.2)",
+                    },
+                    {
+                      offset: 1,
+                      color: "rgba(0,221,255,0.2)",
+                    },
+                  ],
+                  global: true,
                 },
-                emphasis: {
-                  areaColor: "#2AB8FF",
-                  borderWidth: 0,
-                  color: "green",
-                  label: {
-                    show: false,
-                  },
-                },
+                borderColor: "#4ecee6",
+                borderWidth: 1,
               },
+              //   itemStyle: {
+              //     normal: {
+              //       shadowColor: "rgba(0,0,0,0.2)", // 增加阴影透明度
+              //       shadowOffsetX: 2,
+              //       shadowOffsetY: 10,
+              //       opacity: 0.9, // 提高整体透明度
+              //     },
+              //     emphasis: {
+              //       areaColor: "rgba(0,145,234,0.9)", // 提高高亮颜色饱和度
+              //     },
+              //   },
               light: {
                 main: {
-                  intensity: 1,
+                  intensity: 1.5, // 提高光照强度
                   shadow: true,
-                  alpha: 30,
-                  beta: 40,
+                  alpha: 40,
+                  beta: 50,
+                },
+                ambient: {
+                  intensity: 0.3, // 添加环境光
                 },
               },
             },
@@ -131,46 +100,29 @@
               {
                 type: "map",
                 map: "jiangsu",
-                geoIndex: 0,
+                aspectScale: 0.85,
+                layoutCenter: ["50%", "50%"], //地图位置
+                layoutSize: "100%",
                 label: {
-                  normal: {
-                    show: true,
-                    textStyle: {
-                      color: "#1DE9B6",
-                    },
-                  },
-                  emphasis: {
-                    textStyle: {
-                      color: "rgb(183,185,14)",
-                    },
+                  show: true,
+                  textStyle: {
+                    textShadowBlur: 2,
+                    textShadowColor: "rgba(0,0,0,0.3)",
                   },
                 },
                 itemStyle: {
                   normal: {
-                    borderColor: "rgb(147, 235, 248)",
-                    borderWidth: 1,
-                    areaColor: {
-                      type: "radial",
-                      x: 0.5,
-                      y: 0.5,
-                      r: 0.8,
-                      colorStops: [
-                        {
-                          offset: 0,
-                          color: "#09132c", // 0% 处的颜色
-                        },
-                        {
-                          offset: 1,
-                          color: "#274d68", // 100% 处的颜色
-                        },
-                      ],
-                      globalCoord: true, // 缺省为 false
-                    },
+                    areaColor: "#4096ff", // 使用更深的蓝色
+                    borderColor: "rgb(245,245,245)",
+                    borderWidth: 1.5,
+                    shadowColor: "rgba(20,20,20,0.2)",
+                    shadowBlur: 6,
                   },
                   emphasis: {
-                    areaColor: "rgb(46,229,206)",
-                    //    shadowColor: 'rgb(12,25,50)',
-                    borderWidth: 0.1,
+                    areaColor: "#69b1ff", // 调整高亮色
+                    label: {
+                      color: "#ffffff",
+                    },
                   },
                 },
               },
@@ -178,19 +130,17 @@
                 type: "effectScatter",
                 coordinateSystem: "geo",
                 showEffectOn: "render",
-                zlevel: 2,
+                zlevel: 3, // 提高层级
                 rippleEffect: {
-                  period: 15,
-                  scale: 4,
+                  period: 4,
+                  scale: 5,
                   brushType: "fill",
                 },
                 hoverAnimation: true,
                 itemStyle: {
-                  normal: {
-                    color: "#13c2c2",
-                    shadowBlur: 10,
-                    shadowColor: "#333",
-                  },
+                  color: "#ffd666",
+                  shadowBlur: 15,
+                  shadowColor: "rgba(20,20,20,0.2)",
                 },
                 data: mockData.map((item) => ({
                   name: item.name,
@@ -205,33 +155,33 @@
                         colorStops: [
                           {
                             offset: 0,
-                            color: "rgba(19,194,194,0.8)",
+                            color: "rgba(255,186,0,1)", // 使用更深的金黄色提高对比度
                           },
                           {
-                            offset: 0.8,
-                            color: "rgba(19,194,194,0.5)",
+                            offset: 0.6,
+                            color: "rgba(255,186,0,0.85)", // 增加中间透明度
                           },
                           {
                             offset: 1,
-                            color: "rgba(19,194,194,0)",
+                            color: "rgba(255,186,0,0.2)", // 边缘保留一点颜色而不是完全透明
                           },
                         ],
                       },
                     },
                   },
                 })),
-                symbolSize: 20,
+                symbolSize: 20, // 增大标记点大小
                 label: {
                   normal: {
                     show: true,
                     formatter: "{b}",
                     position: "right",
                     textStyle: {
-                      color: "#2f54eb",
-                      fontSize: 16,
-                      fontWeight: "bold",
-                      textShadowColor: "rgba(0,0,0,0.3)",
-                      textShadowBlur: 10,
+                      color: "#262626", // 更深的文字颜色
+                      fontSize: 15,
+                      fontWeight: "500",
+                      textShadowColor: "rgba(255,255,255,1)",
+                      textShadowBlur: 8,
                     },
                   },
                 },

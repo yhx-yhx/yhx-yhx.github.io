@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenLayers与ECharts结合示例</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .chart-popup {
+        width: 300px;
+        height: 300px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        padding: 10px;
+      }
+
+      .ol-popup {
+        position: absolute;
+        background-color: white;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #cccccc;
+        bottom: 12px;
+        left: -50px;
+        min-width: 320px;
+      }
+
+      .ol-popup:after,
+      .ol-popup:before {
+        top: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .ol-popup:after {
+        border-top-color: white;
+        border-width: 10px;
+        left: 48px;
+        margin-left: -10px;
+      }
+
+      .ol-popup:before {
+        border-top-color: #cccccc;
+        border-width: 11px;
+        left: 48px;
+        margin-left: -11px;
+      }
+
+      .ol-popup-closer {
+        text-decoration: none;
+        position: absolute;
+        top: 2px;
+        right: 8px;
+        color: #666;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer">✖</a>
+      <div id="popup-content" class="chart-popup"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化地图
+        const map = new ol.Map({
+          target: "map",
+          view: new ol.View({
+            center: ol.proj.fromLonLat([117.18704223632814, 39.11967296689395]),
+            zoom: 12,
+          }),
+        });
+
+        // 添加天地图图层
+        const tdtLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+        });
+        map.addLayer(tdtLayer);
+
+        // 模拟数据
+        const data = [
+          {
+            name: "和平区",
+            location: ol.proj.fromLonLat([117.215, 39.117]),
+            population: [
+              { value: 235, name: "0-18岁" },
+              { value: 274, name: "19-35岁" },
+              { value: 310, name: "36-60岁" },
+              { value: 335, name: "60岁以上" },
+            ],
+          },
+          {
+            name: "河西区",
+            location: ol.proj.fromLonLat([117.223, 39.109]),
+            population: [
+              { value: 154, name: "0-18岁" },
+              { value: 285, name: "19-35岁" },
+              { value: 246, name: "36-60岁" },
+              { value: 178, name: "60岁以上" },
+            ],
+          },
+          {
+            name: "南开区",
+            location: ol.proj.fromLonLat([117.15, 39.138]),
+            population: [
+              { value: 187, name: "0-18岁" },
+              { value: 356, name: "19-35岁" },
+              { value: 298, name: "36-60岁" },
+              { value: 265, name: "60岁以上" },
+            ],
+          },
+        ];
+
+        // 创建标记图层
+        const vectorSource = new ol.source.Vector();
+        const vectorLayer = new ol.layer.Vector({
+          source: vectorSource,
+        });
+        map.addLayer(vectorLayer);
+
+        // 添加标记点
+        data.forEach((item) => {
+          const feature = new ol.Feature({
+            geometry: new ol.geom.Point(item.location),
+            name: item.name,
+            population: item.population,
+          });
+
+          feature.setStyle(
+            new ol.style.Style({
+              image: new ol.style.Circle({
+                radius: 16,
+                fill: new ol.style.Fill({
+                  color: "#2196f3",
+                }),
+                stroke: new ol.style.Stroke({
+                  color: "#fff",
+                  width: 2,
+                }),
+              }),
+              text: new ol.style.Text({
+                text: "📊",
+                fill: new ol.style.Fill({
+                  color: "#fff",
+                }),
+                font: "16px sans-serif",
+              }),
+            })
+          );
+
+          vectorSource.addFeature(feature);
+        });
+
+        // 弹窗元素
+        const container = document.getElementById("popup");
+        const content = document.getElementById("popup-content");
+        const closer = document.getElementById("popup-closer");
+
+        // 创建弹窗
+        const overlay = new ol.Overlay({
+          element: container,
+          autoPan: true,
+          autoPanAnimation: {
+            duration: 250,
+          },
+        });
+        map.addOverlay(overlay);
+
+        // 关闭弹窗
+        closer.onclick = function () {
+          overlay.setPosition(undefined);
+          closer.blur();
+          const chart = echarts.getInstanceByDom(content);
+          if (chart) {
+            chart.dispose();
+          }
+          return false;
+        };
+
+        // 点击事件
+        map.on("click", function (evt) {
+          const feature = map.forEachFeatureAtPixel(
+            evt.pixel,
+            function (feature) {
+              return feature;
+            }
+          );
+
+          if (feature) {
+            const coordinates = feature.getGeometry().getCoordinates();
+            const name = feature.get("name");
+            const population = feature.get("population");
+
+            overlay.setPosition(coordinates);
+
+            const chart = echarts.init(content);
+            const option = {
+              title: {
+                text: `${name}人口年龄分布`,
+                left: "center",
+                top: 10,
+                textStyle: {
+                  fontSize: 14,
+                },
+              },
+              tooltip: {
+                trigger: "item",
+                formatter: "{a} <br/>{b}: {c} ({d}%)",
+              },
+              legend: {
+                orient: "vertical",
+                left: 10,
+                top: "center",
+              },
+              series: [
+                {
+                  name: "年龄分布",
+                  type: "pie",
+                  radius: ["40%", "70%"],
+                  avoidLabelOverlap: false,
+                  itemStyle: {
+                    borderRadius: 10,
+                    borderColor: "#fff",
+                    borderWidth: 2,
+                  },
+                  label: {
+                    show: false,
+                    position: "center",
+                  },
+                  emphasis: {
+                    label: {
+                      show: true,
+                      fontSize: "12",
+                      fontWeight: "bold",
+                    },
+                  },
+                  labelLine: {
+                    show: false,
+                  },
+                  data: population,
+                },
+              ],
+            };
+            chart.setOption(option);
+          }
+        });
+
+        // 鼠标样式
+        map.on("pointermove", function (e) {
+          const pixel = map.getEventPixel(e.originalEvent);
+          const hit = map.hasFeatureAtPixel(pixel);
+          map.getTargetElement().style.cursor = hit ? "pointer" : "";
+        });
+      });
+    </script>
+  </body>
+</html>

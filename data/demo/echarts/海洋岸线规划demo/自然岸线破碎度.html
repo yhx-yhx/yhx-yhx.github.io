@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>江苏省地图</title>
+    <script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" style="width: 100%; height: 100vh"></div>
+    <script type="text/javascript">
+      var myChart = echarts.init(document.getElementById("main"));
+
+      const mockData = [
+        {
+          name: "江苏省",
+          axcd: 305.23,
+          axds: 97,
+          zraxpsd: 0.32,
+          latlng: [119.8, 33],
+        },
+        {
+          name: "连云港市",
+          axcd: 69.41,
+          axds: 40,
+          zraxpsd: 0.58,
+          latlng: [119.221611, 34.596653],
+        },
+        {
+          name: "南通市",
+          axcd: 70.39,
+          axds: 26,
+          zraxpsd: 0.37,
+          latlng: [120.864608, 32.016212],
+        },
+        {
+          name: "盐城市",
+          axcd: 165.43,
+          axds: 31,
+          zraxpsd: 0.19,
+          latlng: [120.163561, 33.347382],
+        },
+        // {
+        //   name: "海州湾",
+        //   axcd: 37.46,
+        //   axds: 19,
+        //   zraxpsd: 0.51,
+        //   latlng: [119.3577, 34.7691],
+        // },
+      ];
+
+      fetch("https://geo.datav.aliyun.com/areas_v3/bound/320000_full.json")
+        .then((response) => response.json())
+        .then((jiangsuJson) => {
+          echarts.registerMap("jiangsu", jiangsuJson);
+
+          var option = {
+            title: {
+              text: "自然岸线破碎度",
+              left: "center",
+            },
+            tooltip: {
+              trigger: "item",
+              formatter: function (params) {
+                if (!params.value && params.value !== 0) {
+                  return;
+                }
+                if (params.seriesType === "map") {
+                  return params.name + "<br/>自然岸线破碎度: " + params?.value;
+                }
+              },
+            },
+            legend: {
+              data: ["岸线长度", "岸线段数"],
+              bottom: "5%",
+              left: "30%",
+              data: [
+                {
+                  name: "岸线长度",
+                  itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                      { offset: 0, color: "rgba(0,183,255,0.9)" },
+                      { offset: 1, color: "rgba(5,101,184,0.9)" },
+                    ]),
+                  },
+                },
+                {
+                  name: "岸线段数",
+                  itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                      { offset: 0, color: "rgba(255,183,0,0.9)" },
+                      { offset: 1, color: "rgba(184,101,5,0.9)" },
+                    ]),
+                  },
+                },
+              ],
+            },
+            visualMap: {
+              min: 0,
+              max: 1,
+              text: ["高", "低"],
+              realtime: false,
+              calculable: true,
+              inRange: {
+                color: ["lightskyblue", "yellow", "orangered"],
+              },
+              bottom: "9%",
+              left: "30%",
+            },
+            geo: {
+              aspectScale: 0.85,
+              layoutCenter: ["50%", "50%"], //地图位置
+              layoutSize: "100%",
+              map: "jiangsu",
+              roam: false,
+              aspectScale: 0.85,
+              layoutCenter: ["50%", "50%"], //地图位置
+              layoutSize: "100%",
+              showLegendSymbol: false,
+              itemStyle: {
+                areaColor: "#4096ff",
+                borderColor: "rgb(245,245,245)",
+                borderWidth: 1.5,
+                shadowColor: "rgba(20,20,20,0.2)",
+                shadowBlur: 6,
+                shadowOffsetX: 2,
+                shadowOffsetY: 10,
+                opacity: 0.9, // 提高整体透明度
+              },
+              emphasis: {
+                areaColor: "#69b1ff",
+                label: {
+                  show: false,
+                  color: "none",
+                },
+              },
+            },
+            series: [
+              {
+                type: "map",
+                map: "jiangsu",
+                geoIndex: 0,
+                aspectScale: 0.85,
+                layoutCenter: ["50%", "50%"], //地图位置
+                layoutSize: "100%",
+                label: {
+                  show: false,
+                },
+                itemStyle: {
+                  normal: {
+                    areaColor: "#4096ff",
+                    borderColor: "rgb(245,245,245)",
+                    borderWidth: 1.5,
+                    shadowColor: "rgba(20,20,20,0.2)",
+                    shadowBlur: 6,
+                  },
+                },
+                data: mockData.map((item) => ({
+                  name: item.name,
+                  value: Number(item.zraxpsd.toFixed(2)),
+                })),
+              },
+              // 左侧柱子 - 岸线长度
+              {
+                name: "岸线长度",
+                type: "custom",
+                coordinateSystem: "geo",
+                tooltip: {
+                  formatter: function (params) {
+                    return `${params.name}<br/>岸线长度: ${params.value[2]}千米`;
+                  },
+                },
+                renderItem: function (params, api) {
+                  const coord = api.coord([api.value(0), api.value(1)]); // 获取坐标
+                  const value = api.value(2); // 获取岸线长度
+                  const labelHeight = 40; // 标签高度
+                  const maxHeight = 100; // 最大高度限制
+                  const startY = coord[1]; // 起始位置在label上方5px
+
+                  // 计算实际高度(按比例)
+                  const maxValue = Math.max(
+                    ...mockData.slice(1).map((d) => d.axcd)
+                  );
+                  const height = (value / maxValue) * maxHeight;
+                  return {
+                    type: "rect",
+                    shape: {
+                      x: coord[0],
+                      y: startY - height, // 从终点位置向上绘制
+                      width: 12,
+                      height: height,
+                      r: 4,
+                    },
+                    style: {
+                      fill: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: "rgba(0,183,255,0.9)" },
+                        { offset: 1, color: "rgba(5,101,184,0.9)" },
+                      ]),
+                      shadowColor: "rgba(0,0,0,0.3)",
+                      shadowBlur: 8,
+                      shadowOffsetX: 2,
+                      shadowOffsetY: 4,
+                    },
+                  };
+                },
+                // 文本
+
+                data: mockData.slice(1).map((item) => ({
+                  name: item.name,
+                  value: [item.latlng[0], item.latlng[1], item.axcd],
+                })),
+                zlevel: 1,
+              },
+              // 右侧柱子 - 岸线段数
+              {
+                name: "岸线段数",
+                type: "custom",
+                coordinateSystem: "geo",
+                tooltip: {
+                  formatter: function (params) {
+                    return `${params.name}<br/>岸线段数: ${params.value[2]}段`;
+                  },
+                },
+                renderItem: function (params, api) {
+                  const coord = api.coord([api.value(0), api.value(1)]); // 获取坐标
+                  const value = api.value(2); // 获取岸线长度
+                  const labelHeight = 40; // 标签高度
+                  const maxHeight = 100; // 最大高度限制
+                  const startY = coord[1];
+
+                  // 计算实际高度(按比例)
+                  const maxValue = Math.max(
+                    ...mockData.slice(1).map((d) => +d.axds)
+                  );
+                  const height = (value / maxValue) * maxHeight;
+
+                  return {
+                    type: "rect",
+                    shape: {
+                      x: coord[0] + 20,
+                      y: startY - height, // 从终点位置向上绘制
+                      width: 12,
+                      height: height,
+                      r: 4,
+                    },
+                    style: {
+                      fill: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: "rgba(255,183,0,0.9)" },
+                        { offset: 1, color: "rgba(184,101,5,0.9)" },
+                      ]),
+                      shadowColor: "rgba(0,0,0,0.3)",
+                      shadowBlur: 8,
+                      shadowOffsetX: 2,
+                      shadowOffsetY: 4,
+                    },
+                  };
+                },
+                data: mockData.slice(1).map((item) => ({
+                  name: item.name,
+                  value: [item.latlng[0], item.latlng[1], item.axds],
+                })),
+                zlevel: 1,
+              },
+              {
+                name: "名称",
+                type: "custom",
+                coordinateSystem: "geo",
+                renderItem: function (params, api) {
+                  const coord = api.coord([api.value(0), api.value(1)]);
+                  const name = api.value(2);
+                  return {
+                    type: "text",
+                    position: [coord[0] + 16, coord[1] + 5],
+                    style: {
+                      text: name,
+                      fill: "#343",
+                      textAlign: "center",
+                      fontSize: 14,
+                    },
+                  };
+                },
+                data: mockData.slice(1).map((item) => ({
+                  name: item.name,
+                  value: [item.latlng[0], item.latlng[1], item.name],
+                })),
+                zlevel: 2,
+              },
+              {
+                name: "自然岸线破碎度",
+                type: "custom",
+                coordinateSystem: "geo",
+                renderItem: function (params, api) {
+                  const coord = api.coord([api.value(0), api.value(1)]);
+                  const value = api.value(2);
+                  return {
+                    type: "text",
+                    position: [coord[0] + 16, coord[1] + 20],
+                    style: {
+                      text: value,
+                      fill: "#444",
+                      textAlign: "center",
+                      fontWeight: "bold",
+                      fontSize: 18,
+                    },
+                  };
+                },
+                data: mockData.slice(1).map((item) => ({
+                  name: item.name,
+                  value: [item.latlng[0], item.latlng[1], item.zraxpsd],
+                })),
+                zlevel: 2,
+              },
+            ],
+          };
+
+          console.log(option);
+
+          myChart.setOption(option);
+        });
+
+      window.addEventListener("resize", function () {
+        myChart.resize();
+      });
+      window.addEventListener("beforeunload", function () {
+        myChart.dispose();
+      });
+    </script>
+  </body>
+</html>

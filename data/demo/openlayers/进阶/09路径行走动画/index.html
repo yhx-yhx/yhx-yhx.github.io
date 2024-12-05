@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>路径行走动画示例</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .control-button {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        z-index: 1000;
+      }
+
+      .control-button:hover {
+        background-color: #45a049;
+      }
+
+      .control-button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <button id="startButton" class="control-button">开始动画</button>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 创建地图
+        const map = new ol.Map({
+          target: "map",
+          view: new ol.View({
+            center: ol.proj.fromLonLat([117.22686767578126, 39.09361883285121]), // 天津
+            zoom: 12,
+          }),
+        });
+
+        // 添加天地图图层
+        const tdtLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+        });
+        map.addLayer(tdtLayer);
+
+        // 定义路径点
+        const pathCoordinates = [
+          [117.20083, 39.084899], // 起点（左下角）
+          [117.20083, 39.104899], // 左下到左上
+          [117.25083, 39.104899], // 左上到右上
+          [117.25083, 39.084899], // 右上到右下
+          [117.23083, 39.086899], // 右下往左
+          [117.23083, 39.102899], // 向上
+          [117.22083, 39.102899], // 向左
+          [117.22083, 39.088899], // 向下
+          [117.21083, 39.088899], // 继续向下
+          [117.21083, 39.094899], // 终点
+        ].map((coord) => ol.proj.fromLonLat(coord));
+
+        // 创建路径线要素
+        const lineString = new ol.geom.LineString(pathCoordinates);
+        const feature = new ol.Feature({
+          geometry: lineString,
+        });
+
+        // 创建矢量图层
+        const vectorLayer = new ol.layer.Vector({
+          source: new ol.source.Vector({
+            features: [feature],
+          }),
+          style: new ol.style.Style({
+            stroke: new ol.style.Stroke({
+              color: "blue",
+              width: 3,
+            }),
+          }),
+        });
+        map.addLayer(vectorLayer);
+
+        // 创建标记要素
+        const markerFeature = new ol.Feature({
+          geometry: new ol.geom.Point(pathCoordinates[0]),
+        });
+
+        // 创建标记图层
+        const markerLayer = new ol.layer.Vector({
+          source: new ol.source.Vector({
+            features: [markerFeature],
+          }),
+          style: new ol.style.Style({
+            image: new ol.style.Icon({
+              src: "./icon.svg",
+              scale: 0.5,
+            }),
+          }),
+        });
+        map.addLayer(markerLayer);
+
+        const startButton = document.getElementById("startButton");
+        let currentAnimation = null;
+
+        // 动画函数
+        let i = 0;
+        function animate(duration = 2000, frames = 120) {
+          startButton.disabled = true;
+          startButton.textContent = "动画进行中...";
+
+          const avgTime = duration / (pathCoordinates.length - 1) / frames;
+
+          if (i < pathCoordinates.length - 1) {
+            const start = pathCoordinates[i];
+            const end = pathCoordinates[i + 1];
+            let frame = 0;
+
+            currentAnimation = setInterval(() => {
+              frame++;
+              const progress = frame / frames;
+
+              const x = start[0] + (end[0] - start[0]) * progress;
+              const y = start[1] + (end[1] - start[1]) * progress;
+
+              markerFeature.getGeometry().setCoordinates([x, y]);
+
+              if (frame === frames) {
+                clearInterval(currentAnimation);
+                i++;
+                animate();
+              }
+            }, avgTime);
+          } else {
+            // 动画结束，重置状态
+            i = 0;
+            startButton.disabled = false;
+            startButton.textContent = "开始动画";
+            markerFeature.getGeometry().setCoordinates(pathCoordinates[0]);
+          }
+        }
+
+        // 绑定按钮点击事件
+        startButton.addEventListener("click", () => {
+          // 重置标记位置
+          markerFeature.getGeometry().setCoordinates(pathCoordinates[0]);
+          i = 0;
+          animate(1000);
+        });
+      });
+    </script>
+  </body>
+</html>

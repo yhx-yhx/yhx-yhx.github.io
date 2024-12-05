@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>自定义地图样式</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100vh;
+        width: 100%;
+        background: #f5f5f5;
+      }
+      .province-label {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        font-size: 14px;
+        font-weight: bold;
+        color: #333;
+        text-shadow: 2px 2px 3px rgba(255, 255, 255, 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      // 初始化地图
+      var map = L.map("map", {
+        zoomControl: true,
+        attributionControl: false,
+      }).setView([35.8617, 104.1954], 4); // 调整到中国中心位置
+
+      // 自定义地图样式
+      var customStyle = {
+        color: "#3498db", // 边界线颜色
+        weight: 0, // 边界线宽度设为0以去掉边框
+        opacity: 0.8, // 边界线透明度
+        fillColor: "#ecf0f1", // 填充颜色
+        fillOpacity: 0.6, // 填充透明度
+        dashArray: null, // 实线
+      };
+
+      // 添加底图
+      L.tileLayer(
+        "http://t{s}.tianditu.gov.cn/vec_w/wmts?layer=vec&style=default&tilematrixset=w&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=d32c6748c80f81a44acd8633cea41dfd",
+        {
+          subdomains: ["0", "1", "2", "3", "4", "5", "6", "7"],
+          attribution: "&copy; 天地图",
+        }
+      ).addTo(map);
+
+      // 加载中国行政区划GeoJSON数据
+      fetch(
+        "https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=100000_full"
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          // 创建GeoJSON图层
+          L.geoJSON(data, {
+            style: function (feature) {
+              return {
+                ...customStyle,
+                fillColor: getRandomColor(), // 为每个区域随机分配颜色
+              };
+            },
+            onEachFeature: function (feature, layer) {
+              // // 添加省份名称标签
+              // const center = layer.getBounds().getCenter();
+              // L.marker(center, {
+              //   icon: L.divIcon({
+              //     className: "province-label",
+              //     html: feature.properties.name,
+              //     iconSize: [100, 40],
+              //     iconAnchor: [50, 20],
+              //   }),
+              // }).addTo(map);
+
+              // 添加鼠标悬停效果
+              layer.on({
+                mouseover: function (e) {
+                  var layer = e.target;
+                  layer.setStyle({
+                    weight: 0,
+                    color: "#1890ff",
+                    fillOpacity: 0.9,
+                    dashArray: null,
+                    fillColor: "#e6f7ff",
+                  });
+                  layer
+                    .bindTooltip(feature.properties.name, {
+                      className: "custom-tooltip",
+                      direction: "auto",
+                      permanent: false,
+                      sticky: true,
+                      opacity: 0.9,
+                      offset: [0, -10],
+                    })
+                    .openTooltip();
+                },
+                mouseout: function (e) {
+                  var layer = e.target;
+                  layer.setStyle({
+                    ...customStyle,
+                    fillColor: layer.options.fillColor,
+                    weight: 0,
+                    fillOpacity: 0.6,
+                  });
+                  layer.closeTooltip();
+                },
+              });
+            },
+          }).addTo(map);
+        });
+
+      // 生成随机颜色函数
+      function getRandomColor() {
+        const colors = [
+          "#c12e34",
+          "#e6b600",
+          "#0098d9",
+          "#2b821d",
+          "#005eaa",
+          "#339ca8",
+          "#cda819",
+          "#32a487",
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+    </script>
+  </body>
+</html>

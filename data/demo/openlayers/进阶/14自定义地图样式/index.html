@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>自定义地图样式</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100vh;
+        width: 100%;
+        background: #f5f5f5;
+      }
+      .province-label {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        font-size: 14px;
+        font-weight: bold;
+        color: #333;
+        text-shadow: 2px 2px 3px rgba(255, 255, 255, 0.8);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      // 初始化地图
+      const map = new ol.Map({
+        target: "map",
+        view: new ol.View({
+          center: ol.proj.fromLonLat([104.1954, 35.8617]),
+          zoom: 4,
+        }),
+      });
+
+      // 添加天地图底图
+      const tdtLayer = new ol.layer.Tile({
+        source: new ol.source.XYZ({
+          url: "http://t{0-7}.tianditu.gov.cn/vec_w/wmts?layer=vec&style=default&tilematrixset=w&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=d32c6748c80f81a44acd8633cea41dfd",
+        }),
+      });
+      map.addLayer(tdtLayer);
+
+      // 生成随机颜色函数
+      function getRandomColor() {
+        const colors = [
+          "#c12e34",
+          "#e6b600",
+          "#0098d9",
+          "#2b821d",
+          "#005eaa",
+          "#339ca8",
+          "#cda819",
+          "#32a487",
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      // 加载中国行政区划GeoJSON数据
+      fetch(
+        "https://geo.datav.aliyun.com/areas_v3/bound/geojson?code=100000_full"
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          // 创建矢量图层
+          const vectorSource = new ol.source.Vector({
+            features: new ol.format.GeoJSON().readFeatures(data, {
+              featureProjection: "EPSG:3857",
+            }),
+          });
+
+          const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: function (feature) {
+              return new ol.style.Style({
+                fill: new ol.style.Fill({
+                  color: getRandomColor() + "99", // 添加透明度
+                }),
+                stroke: new ol.style.Stroke({
+                  color: "#3498db",
+                  width: 0,
+                }),
+              });
+            },
+          });
+
+          map.addLayer(vectorLayer);
+
+          // 添加鼠标交互
+          const overlay = new ol.Overlay({
+            element: document.createElement("div"),
+            positioning: "bottom-center",
+            offset: [0, -10],
+          });
+          map.addOverlay(overlay);
+
+          // map.on("pointermove", function (evt) {
+          //   const feature = map.forEachFeatureAtPixel(
+          //     evt.pixel,
+          //     function (feature) {
+          //       return feature;
+          //     }
+          //   );
+
+          //   if (feature) {
+          //     map.getTargetElement().style.cursor = "pointer";
+
+          //     // 高亮显示
+          //     feature.setStyle(
+          //       new ol.style.Style({
+          //         fill: new ol.style.Fill({
+          //           color: "#e6f7ffee",
+          //         }),
+          //         stroke: new ol.style.Stroke({
+          //           color: "#1890ff",
+          //           width: 0,
+          //         }),
+          //         })
+          //       );
+
+          //       // 显示省份名称
+          //       const element = overlay.getElement();
+          //       element.innerHTML = feature.getProperties().name;
+          //       element.className = "province-label";
+          //       overlay.setPosition(evt.coordinate);
+          //     } else {
+          //       map.getTargetElement().style.cursor = "";
+          //       vectorLayer
+          //         .getSource()
+          //         .getFeatures()
+          //         .forEach((f) => {
+          //           f.setStyle(null); // 恢复默认样式
+          //         });
+          //       overlay.setPosition(undefined);
+          //     }
+          //   });
+        });
+    </script>
+  </body>
+</html>

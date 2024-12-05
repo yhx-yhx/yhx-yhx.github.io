@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenLayers Map</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      #popup {
+        height: 42px;
+        line-height: 42px;
+        background-color: #fff;
+        color: #000;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="popup">2023年出生人口热力图</div>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 创建地图
+        const map = new ol.Map({
+          target: "map",
+          view: new ol.View({
+            center: ol.proj.fromLonLat([117.33083, 39.094899]), // 天津
+            zoom: 4,
+          }),
+        });
+
+        // 添加天地图图层
+        const tdtLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+        });
+        map.addLayer(tdtLayer);
+
+        // 热力图数据
+        const heatmapData = [
+          // 全国2023年主要城市出生人口
+          { coordinates: [113.2644, 23.1291], weight: 1037000 }, // 广东省
+          { coordinates: [113.6249, 34.757], weight: 695000 }, // 河南省
+          { coordinates: [106.3315, 26.8154], weight: 411000 }, // 贵州省
+          { coordinates: [117.3308, 39.0949], weight: 61000 }, // 天津
+          { coordinates: [91.1322, 29.6469], weight: 76000 }, // 西藏
+          { coordinates: [126.1924, 43.666], weight: 88000 }, // 吉林
+          { coordinates: [95.66, 36.62], weight: 89000 }, // 青海
+          { coordinates: [110.1999, 20.044], weight: 96000 }, // 海南
+          { coordinates: [121.4737, 31.2304], weight: 98000 }, // 上海
+          { coordinates: [87.6, 43.793], weight: 109000 }, // 新疆
+          { coordinates: [106.2782, 38.469], weight: 113000 }, // 宁夏
+          { coordinates: [111.6704, 40.8183], weight: 123000 }, // 内蒙古
+          { coordinates: [116.4074, 39.9042], weight: 123000 }, // 北京
+          { coordinates: [123.4315, 41.8057], weight: 175000 }, // 辽宁
+          { coordinates: [106.55, 29.563], weight: 178000 }, // 重庆
+          { coordinates: [102.4572, 36.0583], weight: 191000 }, // 甘肃
+          { coordinates: [112.562, 37.8734], weight: 213000 }, // 山西
+          { coordinates: [108.9402, 34.3293], weight: 273000 }, // 陕西
+          { coordinates: [115.8221, 29.1042], weight: 295000 }, // 江西
+          { coordinates: [114.3055, 30.5928], weight: 326000 }, // 湖北
+          { coordinates: [120.1551, 30.2741], weight: 383000 }, // 浙江
+          { coordinates: [102.8329, 24.882], weight: 385000 }, // 云南
+          { coordinates: [117.2272, 31.82], weight: 395000 }, // 安徽
+          { coordinates: [112.9834, 27.6104], weight: 399000 }, // 湖南
+          { coordinates: [108.32, 23.1242], weight: 405000 }, // 广西
+          { coordinates: [118.7969, 32.0603], weight: 409000 }, // 江苏
+          { coordinates: [106.7135, 26.5783], weight: 412000 }, // 贵州
+          { coordinates: [115.4839, 38.4161], weight: 418000 }, // 河北
+        ];
+
+        // 创建热力图图层
+        const heatmapLayer = new ol.layer.Heatmap({
+          source: new ol.source.Vector({
+            features: heatmapData.map((data) => {
+              return new ol.Feature({
+                geometry: new ol.geom.Point(
+                  ol.proj.fromLonLat(data.coordinates)
+                ),
+                weight: data.weight,
+              });
+            }),
+          }),
+          blur: 15,
+          radius: 10,
+          weight: function (feature) {
+            const weight = feature.get("weight");
+            return Math.min(weight / 1037000, 1); // 归一化权重
+          },
+        });
+
+        map.addLayer(heatmapLayer);
+      });
+    </script>
+  </body>
+</html>

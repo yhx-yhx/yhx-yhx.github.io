@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenLayers Map</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      #swipe {
+        width: 100%;
+        position: absolute;
+        top: 50%;
+        z-index: 1;
+        opacity: 0;
+        cursor: ew-resize;
+        pointer-events: none; /* 让滑块不阻挡地图点击 */
+      }
+
+      .swipe-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #fff;
+        z-index: 2;
+        pointer-events: none;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .swipe-handle {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        background: #fff;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 3;
+        pointer-events: all; /* 让滑块手柄可以点击 */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        cursor: ew-resize;
+      }
+
+      .swipe-handle::before,
+      .swipe-handle::after {
+        content: "";
+        position: absolute;
+        width: 2px;
+        height: 10px;
+        background: #666;
+        left: 7px;
+        top: 7px;
+      }
+
+      .swipe-handle::after {
+        left: 15px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <input id="swipe" type="range" style="width: 100%" />
+    <div class="swipe-line">
+      <div class="swipe-handle"></div>
+    </div>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 创建左侧图层(矢量图)
+        const leftLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7",
+          }),
+        });
+
+        // 创建右侧图层(影像图)
+        const rightLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://wprd01.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=6",
+          }),
+        });
+
+        // 创建地图
+        const map = new ol.Map({
+          target: "map",
+          layers: [leftLayer, rightLayer],
+          view: new ol.View({
+            center: ol.proj.fromLonLat([116.397428, 39.90923]), // 北京
+            zoom: 12,
+          }),
+        });
+
+        // 获取滑块元素
+        const swipe = document.getElementById("swipe");
+        const swipeLine = document.querySelector(".swipe-line");
+        const swipeHandle = document.querySelector(".swipe-handle");
+
+        // 监听滑块手柄拖动
+        let isDragging = false;
+        let startX = 0;
+        let startLeft = 50;
+
+        swipeHandle.addEventListener("mousedown", function (e) {
+          isDragging = true;
+          startX = e.clientX;
+          startLeft = parseInt(swipeLine.style.left || 50);
+          e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", function (e) {
+          if (!isDragging) return;
+
+          const dx = e.clientX - startX;
+          const containerWidth = map.getTargetElement().offsetWidth;
+          let newLeft = startLeft + (dx / containerWidth) * 100;
+
+          // 限制范围在0-100之间
+          newLeft = Math.max(0, Math.min(100, newLeft));
+
+          swipeLine.style.left = newLeft + "%";
+          swipe.value = newLeft;
+          map.render();
+        });
+
+        document.addEventListener("mouseup", function () {
+          isDragging = false;
+        });
+
+        // 渲染前处理
+        rightLayer.on("prerender", function (event) {
+          const ctx = event.context;
+          const mapSize = map.getSize();
+          const width = mapSize[0] * (swipe.value / 100);
+
+          const tl = ol.render.getRenderPixel(event, [width, 0]);
+          const tr = ol.render.getRenderPixel(event, [mapSize[0], 0]);
+          const bl = ol.render.getRenderPixel(event, [width, mapSize[1]]);
+          const br = ol.render.getRenderPixel(event, mapSize);
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(tl[0], tl[1]);
+          ctx.lineTo(bl[0], bl[1]);
+          ctx.lineTo(br[0], br[1]);
+          ctx.lineTo(tr[0], tr[1]);
+          ctx.closePath();
+          ctx.clip();
+        });
+
+        // 渲染后处理
+        rightLayer.on("postrender", function (event) {
+          const ctx = event.context;
+          ctx.restore();
+        });
+      });
+    </script>
+  </body>
+</html>

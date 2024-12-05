@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaflet与视频监控示例</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/xgplayer/dist/index.min.css"
+    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/xgplayer/dist/index.min.js"></script>
+    <script src="https://unpkg.com/xgplayer-mp4/dist/index.min.js"></script>
+    <script src="https://unpkg.com/xgplayer-flv/dist/index.min.js"></script>
+    <script src="https://unpkg.com/xgplayer-hls/dist/index.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .custom-marker-icon {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #2196f3, #1976d2);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+
+      .custom-marker-icon:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      }
+
+      .video-popup {
+        width: 480px;
+        height: 320px;
+        background: #000;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化地图
+        const map = L.map("map", {
+          center: [39.11967296689395, 117.18704223632814],
+          zoom: 12,
+          zoomControl: true,
+          attributionControl: false,
+        });
+
+        // 添加底图
+        const urlLayer =
+          "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd";
+        L.tileLayer(urlLayer).addTo(map);
+
+        // 模拟监控点位数据
+        const cameras = [
+          {
+            name: "监控点1",
+            location: [39.117, 117.215],
+            url: "https://stream7.iqilu.com/10339/upload_transcode/202002/18/20200218114723HDu3hhxqIT.mp4",
+          },
+          {
+            name: "监控点2",
+            location: [39.109, 117.223],
+            url: "https://vip.lz-cdn5.com/20220401/3315_dbd60bc0/index.m3u8",
+          },
+        ];
+
+        // 创建自定义图标
+        const createCustomIcon = (text) => {
+          return L.divIcon({
+            className: "custom-marker-icon",
+            html: `<span>📹</span>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          });
+        };
+
+        // 添加监控点位标记
+        cameras.forEach((camera) => {
+          const marker = L.marker(camera.location, {
+            icon: createCustomIcon(camera.name),
+          }).addTo(map);
+
+          const popupContent = document.createElement("div");
+          popupContent.className = "video-popup";
+          popupContent.id = "video-popup-" + camera.name;
+
+          const popup = L.popup({
+            maxWidth: 500,
+            minWidth: 480,
+            maxHeight: 340,
+            autoPan: true,
+            closeButton: true,
+            className: "custom-popup",
+          }).setContent(popupContent);
+
+          marker.bindPopup(popup);
+
+          // 打开弹窗时初始化视频播放器
+          marker.on("popupopen", () => {
+            let plugins = [];
+            if (camera.url.includes(".flv")) {
+              plugins = [window.FlvPlayer];
+            } else if (camera.url.includes(".m3u8")) {
+              plugins = [window.HlsPlayer];
+            } else if (camera.url.includes(".mp4")) {
+              plugins = [window.Mp4Player];
+            }
+
+            new window.Player({
+              id: "video-popup-" + camera.name,
+              url: camera.url,
+              // 流式布局
+              fluid: true,
+              // 自适应视频内容宽高
+              fitVideoSize: "auto",
+              // 音量
+              volume: 0.6,
+              // 自动播放
+              autoplay: true,
+              // 初始化显示视频首帧
+              videoInit: true,
+              plugins,
+              controls: true,
+            });
+          });
+
+          // 关闭弹窗时销毁播放器
+          marker.on("popupclose", () => {
+            const players = popupContent.getElementsByTagName("video");
+            if (players && players.length > 0) {
+              players[0].pause();
+            }
+            popupContent.innerHTML = "";
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

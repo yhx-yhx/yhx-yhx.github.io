@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>散点涟漪效果</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .ripple-marker {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(33, 150, 243, 0.8);
+        position: relative;
+        box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3),
+          0 0 10px rgba(33, 150, 243, 0.5);
+      }
+
+      .ripple-marker::before,
+      .ripple-marker::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(33, 150, 243, 0.6);
+        transform: translate(-50%, -50%);
+      }
+
+      .ripple-marker::before {
+        animation: ripple 2s infinite ease-out;
+      }
+
+      .ripple-marker::after {
+        animation: ripple 2s infinite ease-out 0.5s;
+      }
+
+      @keyframes ripple {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 0.4;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(3.5);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 初始化地图
+        const map = new ol.Map({
+          target: "map",
+          view: new ol.View({
+            center: ol.proj.fromLonLat([116.4074, 39.9042]),
+            zoom: 12,
+          }),
+        });
+
+        // 添加天地图图层
+        const tdtLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+        });
+        map.addLayer(tdtLayer);
+
+        // 创建矢量图层
+        const vectorSource = new ol.source.Vector();
+        const vectorLayer = new ol.layer.Vector({
+          source: vectorSource,
+        });
+        map.addLayer(vectorLayer);
+
+        // 添加点位数据
+        const points = [
+          [116.4074, 39.9042],
+          [116.4174, 39.9142],
+          [116.3974, 39.8942],
+        ];
+
+        points.forEach((point) => {
+          const feature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat(point)),
+          });
+
+          // 自定义样式
+          feature.setStyle(
+            new ol.style.Style({
+              image: new ol.style.Circle({
+                radius: 12,
+                fill: new ol.style.Fill({
+                  color: "rgba(33, 150, 243, 0.8)",
+                }),
+                stroke: new ol.style.Stroke({
+                  color: "rgba(33, 150, 243, 0.6)",
+                  width: 2,
+                }),
+              }),
+            })
+          );
+
+          vectorSource.addFeature(feature);
+        });
+
+        // 添加涟漪动画效果
+        points.forEach((point) => {
+          const rippleFeature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat(point)),
+          });
+
+          let phase = 0;
+          const animate = () => {
+            // 确保半径始终为正数
+            const radius = Math.max(12 + 30 * Math.sin(phase), 1);
+            const opacity = Math.max(0.8 - 0.6 * Math.sin(phase), 0);
+
+            rippleFeature.setStyle(
+              new ol.style.Style({
+                image: new ol.style.Circle({
+                  radius: radius,
+                  fill: new ol.style.Fill({
+                    color: `rgba(33, 150, 243, ${opacity})`,
+                  }),
+                }),
+              })
+            );
+
+            phase += 0.1;
+            if (phase > Math.PI * 2) {
+              phase = 0;
+            }
+            requestAnimationFrame(animate);
+          };
+
+          animate();
+          vectorSource.addFeature(rippleFeature);
+        });
+      });
+    </script>
+  </body>
+</html>

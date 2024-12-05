@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>江苏省地图</title>
+    <script src="https://unpkg.com/echarts@5.5.1/dist/echarts.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main" style="width: 100%; height: 100vh"></div>
+    <script type="text/javascript">
+      var myChart = echarts.init(document.getElementById("main"));
+
+      const mockData = [
+        {
+          name: "江苏省",
+          value: [120.8060442, 33.2383917],
+          color: "#4ea397",
+        },
+        {
+          name: "连云港市",
+          value: [119.4952581, 34.8177563],
+          color: "#fadf14",
+        },
+        {
+          name: "南通市",
+          value: [121.4466322, 32.3873136],
+          color: "#deee4f",
+        },
+        {
+          name: "盐城市",
+          value: [120.9849168, 33.1293519],
+          color: "#b7dfa0",
+        },
+      ];
+
+      const locationData = [
+        {
+          name: "江苏省",
+          value: [119.8, 33],
+        },
+        {
+          name: "连云港市",
+          value: [119.221611, 34.596653],
+        },
+        {
+          name: "南通市",
+          value: [120.864608, 32.016212],
+        },
+        {
+          name: "盐城市",
+          value: [120.163561, 33.347382],
+        },
+      ];
+
+      fetch("https://geo.datav.aliyun.com/areas_v3/bound/320000_full.json")
+        .then((response) => response.json())
+        .then((jiangsuJson) => {
+          echarts.registerMap("jiangsu", jiangsuJson);
+
+          var option = {
+            title: {
+              text: "海洋开发利用重心",
+              left: "center",
+            },
+            tooltip: {
+              trigger: "item",
+              formatter: function (params) {
+                return params.name;
+              },
+            },
+            geo: {
+              map: "jiangsu",
+              roam: false,
+              aspectScale: 0.85,
+              layoutCenter: ["50%", "50%"],
+              layoutSize: "100%",
+              // label: {
+              //   show: false,
+              //   fill: "#343",
+              //   textAlign: "center",
+              //   fontSize: 14,
+              // },
+              itemStyle: {
+                areaColor: "#4096ff",
+                color: ["#22c3aa", "#7bd9a5", "#d0648a", "#f58db2", "#f2b3c9"],
+                borderColor: "rgb(245,245,245)",
+                borderWidth: 1.5,
+                shadowColor: "rgba(20,20,20,0.3)",
+                shadowBlur: 6,
+                shadowOffsetX: 2,
+                shadowOffsetY: 10,
+                opacity: 0.9,
+              },
+              regions: mockData.slice(1).map((item) => ({
+                name: item.name,
+                itemStyle: {
+                  areaColor: item.color,
+                },
+              })),
+              emphasis: {
+                areaColor: "#69b1ff",
+                label: {
+                  show: false,
+                },
+              },
+            },
+            series: [
+              {
+                type: "effectScatter",
+                coordinateSystem: "geo",
+                showEffectOn: "render",
+                zlevel: 3, // 提高层级
+                rippleEffect: {
+                  period: 4,
+                  scale: 16,
+                  brushType: "fill",
+                  number: 4,
+                },
+                hoverAnimation: true,
+                itemStyle: {
+                  color: "#ffd666",
+                  shadowBlur: 15,
+                  shadowColor: "rgba(20,20,20,0.2)",
+                },
+                data: mockData.slice(1).map((item) => ({
+                  ...item,
+                  itemStyle: {
+                    color: item.color,
+                  },
+                })),
+                symbolSize: 12,
+                tooltip: {
+                  formatter: "{b}<br/>{c}",
+                },
+                itemStyle: {
+                  color: "#FF0000",
+                  shadowBlur: 10,
+                  shadowColor: "rgba(0,0,0,0.3)",
+                },
+                emphasis: {
+                  itemStyle: {
+                    color: "#69b1ff",
+                  },
+                  scale: true,
+                },
+              },
+              {
+                name: "名称",
+                type: "custom",
+                zlevel: 4,
+                coordinateSystem: "geo",
+                renderItem: function (params, api) {
+                  const coord = api.coord([api.value(0), api.value(1)]);
+                  const name = api.value(2);
+                  return {
+                    type: "text",
+                    position: [coord[0], coord[1]],
+                    style: {
+                      text: name,
+                      fill: "#343",
+                      textAlign: "center",
+                      fontSize: 14,
+                    },
+                  };
+                },
+                data: locationData.slice(1).map((item) => {
+                  return {
+                    name: item.name,
+                    value: [item.value[0], item.value[1], item.name],
+                  };
+                }),
+              },
+            ],
+          };
+
+          myChart.setOption(option);
+        });
+
+      window.addEventListener("resize", function () {
+        myChart.resize();
+      });
+      window.addEventListener("beforeunload", function () {
+        myChart.dispose();
+      });
+    </script>
+  </body>
+</html>

@@ -62,7 +62,7 @@
 
           var option = {
             title: {
-              text: "江苏省岸线规划",
+              text: "自然岸线破碎度",
               left: "center",
             },
             tooltip: {
@@ -119,8 +119,9 @@
               },
               map: "jiangsu",
               roam: false,
-              zoom: 1.2,
-              center: [119.8, 33],
+              aspectScale: 0.85,
+              layoutCenter: ["50%", "50%"], //地图位置
+              layoutSize: "100%",
               showLegendSymbol: false,
               itemStyle: {
                 areaColor: {

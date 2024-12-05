@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenLayers Map</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 创建地图
+        const map = new ol.Map({
+          target: "map",
+          view: new ol.View({
+            center: ol.proj.fromLonLat([117.33083, 39.094899]), // 天津
+            zoom: 4,
+          }),
+        });
+
+        // 添加天地图图层
+        const tdtLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+        });
+        map.addLayer(tdtLayer);
+
+        // GeoJSON 数据
+        const geojsonFeature = {
+          type: "Feature",
+          properties: {
+            name: "Point",
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [117.33083, 39.094899],
+          },
+        };
+
+        // 添加 GeoJSON 点要素
+        const pointSource = new ol.source.Vector({
+          features: [
+            new ol.Feature({
+              geometry: new ol.geom.Point(
+                ol.proj.fromLonLat(geojsonFeature.geometry.coordinates)
+              ),
+            }),
+          ],
+        });
+
+        const pointLayer = new ol.layer.Vector({
+          source: pointSource,
+          style: new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 10,
+              fill: new ol.style.Fill({
+                color: "rgba(255, 0, 0, 0.5)",
+              }),
+              stroke: new ol.style.Stroke({
+                color: "red",
+                width: 2,
+              }),
+            }),
+          }),
+        });
+        map.addLayer(pointLayer);
+
+        // 添加 FeatureCollection 多边形
+        const featureCollections = {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: { name: "polygon1" },
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [117.32248306274415, 39.107827920205374],
+                    [117.31578826904298, 39.09291571258751],
+                    [117.33707427978517, 39.083593981163304],
+                    [117.35578536987306, 39.09584514515822],
+                    [117.34857559204103, 39.11022423079904],
+                    [117.32248306274415, 39.107827920205374],
+                  ],
+                ],
+              },
+            },
+          ],
+        };
+
+        const polygonSource = new ol.source.Vector({
+          features: new ol.format.GeoJSON().readFeatures(featureCollections, {
+            featureProjection: "EPSG:3857",
+            dataProjection: "EPSG:4326",
+          }),
+        });
+
+        const polygonLayer = new ol.layer.Vector({
+          source: polygonSource,
+          style: new ol.style.Style({
+            stroke: new ol.style.Stroke({
+              color: "blue",
+              width: 2,
+            }),
+            fill: new ol.style.Fill({
+              color: "rgba(0, 0, 255, 0.1)",
+            }),
+          }),
+        });
+        map.addLayer(polygonLayer);
+
+        // 定位到多边形区域
+        map.getView().fit(polygonSource.getExtent(), {
+          padding: [50, 50, 50, 50],
+        });
+      });
+    </script>
+  </body>
+</html>
