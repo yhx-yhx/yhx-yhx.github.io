@@ -7,7 +7,7 @@
 
   // 获取数据
   async function getDatas() {
-    return await fetch("/noteplus-dist/data/demo/级联下拉框/data.json")
+    return await fetch("/data/demo/级联下拉框/data.json")
       // return await fetch("https://study.duyiedu.com/api/citylist/")
       .then((res) => res.json())
       .then((res) => res.data);
