@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>点击查询</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100vh;
+        width: 100%;
+        background: #f5f5f5;
+      }
+      .popup {
+        position: absolute;
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #cccccc;
+        bottom: 12px;
+        left: -50px;
+        min-width: 280px;
+      }
+      .popup:after,
+      .popup:before {
+        top: 100%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+      .popup:after {
+        border-top-color: white;
+        border-width: 10px;
+        left: 48px;
+        margin-left: -10px;
+      }
+      .popup:before {
+        border-top-color: #cccccc;
+        border-width: 11px;
+        left: 48px;
+        margin-left: -11px;
+      }
+      .popup-content {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="popup" class="popup" style="display: none">
+      <div id="popup-content" class="popup-content"></div>
+    </div>
+    <script>
+      // 初始化地图
+      const map = new ol.Map({
+        target: "map",
+        view: new ol.View({
+          center: ol.proj.fromLonLat([104.1954, 35.8617]),
+          zoom: 4,
+        }),
+      });
+
+      // 添加天地图底图
+      const tdtLayer = new ol.layer.Tile({
+        source: new ol.source.XYZ({
+          url: "http://t{0-7}.tianditu.gov.cn/vec_w/wmts?layer=vec&style=default&tilematrixset=w&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=d32c6748c80f81a44acd8633cea41dfd",
+        }),
+      });
+      map.addLayer(tdtLayer);
+
+      // 添加 WMS 图层
+      const wmsLayer = new ol.layer.Tile({
+        source: new ol.source.TileWMS({
+          url: "https://ahocevar.com/geoserver/wms",
+          params: {
+            LAYERS: "ne:ne",
+            TILED: true,
+          },
+          serverType: "geoserver",
+        }),
+      });
+      map.addLayer(wmsLayer);
+
+      // 添加 WFS 图层
+      const wfsSource = new ol.source.Vector({
+        format: new ol.format.GeoJSON(),
+        url: function (extent) {
+          return (
+            "https://ahocevar.com/geoserver/wfs?service=WFS&" +
+            "version=1.0.0&request=GetFeature&typename=ne:ne&" +
+            "outputFormat=application/json&srsname=EPSG:4326&" +
+            "bbox=" +
+            extent.join(",") +
+            ",EPSG:3857"
+          );
+        },
+        strategy: ol.loadingstrategy.bbox,
+      });
+
+      const wfsLayer = new ol.layer.Vector({
+        source: wfsSource,
+      });
+      map.addLayer(wfsLayer);
+
+      // 创建弹出框 Overlay
+      const popup = new ol.Overlay({
+        element: document.getElementById("popup"),
+        positioning: "bottom-center",
+        stopEvent: false,
+        offset: [0, -10],
+      });
+      map.addOverlay(popup);
+
+      // 点击查询功能
+      map.on("click", function (evt) {
+        const coordinate = evt.coordinate;
+        const viewResolution = map.getView().getResolution();
+
+        // WMS GetFeatureInfo
+        const wmsUrl = wmsLayer
+          .getSource()
+          .getFeatureInfoUrl(coordinate, viewResolution, "EPSG:3857", {
+            INFO_FORMAT: "application/json",
+          });
+
+        if (wmsUrl) {
+          fetch(wmsUrl)
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.features && data.features.length) {
+                const content = document.getElementById("popup-content");
+                content.innerHTML = "<h4>WMS 查询结果:</h4>";
+                data.features.forEach((feature) => {
+                  content.innerHTML += `<p>${JSON.stringify(
+                    feature.properties
+                  )}</p>`;
+                });
+                popup.setPosition(coordinate);
+                document.getElementById("popup").style.display = "block";
+              }
+            });
+        }
+
+        // WFS 查询
+        const wfsFeatures = wfsSource.getFeaturesAtCoordinate(coordinate);
+        if (wfsFeatures.length) {
+          const content = document.getElementById("popup-content");
+          content.innerHTML = "<h4>WFS 查询结果:</h4>";
+          wfsFeatures.forEach((feature) => {
+            content.innerHTML += `<p>${JSON.stringify(
+              feature.getProperties()
+            )}</p>`;
+          });
+          popup.setPosition(coordinate);
+          document.getElementById("popup").style.display = "block";
+        }
+      });
+
+      // 点击地图空白处关闭弹出框
+      map.on("click", function (evt) {
+        const feature = map.forEachFeatureAtPixel(
+          evt.pixel,
+          function (feature) {
+            return feature;
+          }
+        );
+        if (!feature) {
+          document.getElementById("popup").style.display = "none";
+        }
+      });
+    </script>
+  </body>
+</html>

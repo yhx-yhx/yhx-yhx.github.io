@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenLayers Map</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <script src="https://cdn.jsdelivr.net/npm/ol/dist/ol.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 100%;
+        height: 100vh;
+      }
+
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      .ol-control button {
+        background-color: #1890ff;
+        border: none;
+        color: white;
+        padding: 8px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .ol-control button:hover {
+        background-color: #40a9ff;
+      }
+
+      .draw-controls {
+        top: 50%;
+        right: 0.5em;
+        left: auto;
+        transform: translateY(-50%);
+        background: white;
+        padding: 5px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .draw-controls button {
+        display: block;
+        float: none;
+        margin: 5px;
+        min-width: 40px;
+        height: 40px;
+        font-size: 14px;
+      }
+
+      .draw-controls .cancel-draw-btn {
+        background-color: #ff4d4f;
+        margin-top: 10px;
+      }
+
+      .draw-controls .cancel-draw-btn:hover {
+        background-color: #ff7875;
+      }
+
+      .reset-extent {
+        top: 50%;
+        left: 0.5em;
+        transform: translateY(-50%);
+      }
+
+      .reset-extent button {
+        font-size: 18px;
+        width: 40px;
+        height: 40px;
+      }
+
+      .icon {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 创建地图
+        const map = new ol.Map({
+          target: "map",
+          view: new ol.View({
+            center: ol.proj.fromLonLat([117.33083, 39.094899]), // 天津
+            zoom: 4,
+          }),
+        });
+        // TODO
+        window.map = map;
+
+        // 添加天地图图层
+        const tdtLayer = new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "http://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=d32c6748c80f81a44acd8633cea41dfd",
+          }),
+        });
+        map.addLayer(tdtLayer);
+
+        // 保存初始范围
+        const initialExtent = map.getView().calculateExtent(map.getSize());
+
+        // 创建绘图图层
+        const source = new ol.source.Vector();
+        const vector = new ol.layer.Vector({
+          source: source,
+          style: new ol.style.Style({
+            fill: new ol.style.Fill({
+              color: "rgba(24, 144, 255, 0.2)",
+            }),
+            stroke: new ol.style.Stroke({
+              color: "#1890ff",
+              width: 2,
+            }),
+            image: new ol.style.Circle({
+              radius: 7,
+              fill: new ol.style.Fill({
+                color: "#1890ff",
+              }),
+            }),
+          }),
+        });
+        map.addLayer(vector);
+
+        // 创建绘图工具
+        let draw;
+        const addInteraction = function (type) {
+          if (draw) {
+            map.removeInteraction(draw);
+          }
+          draw = new ol.interaction.Draw({
+            source: source,
+            type: type,
+          });
+          map.addInteraction(draw);
+        };
+
+        // 创建编辑工具
+        const modify = new ol.interaction.Modify({ source: source });
+        map.addInteraction(modify);
+
+        // 创建删除工具
+        const snap = new ol.interaction.Snap({ source: source });
+        map.addInteraction(snap);
+
+        // 添加绘图控件
+        const drawControls = document.createElement("div");
+        drawControls.className = "ol-control draw-controls";
+
+        // 定义绘图工具图标
+        const icons = {
+          Point:
+            '<svg class="icon" viewBox="0 0 1024 1024"><path d="M512 85.333333c-164.949333 0-298.666667 133.738667-298.666667 298.666667 0 224 298.666667 554.666667 298.666667 554.666667s298.666667-330.666667 298.666667-554.666667c0-164.928-133.717333-298.666667-298.666667-298.666667z m0 448a149.333333 149.333333 0 1 1 0-298.666666 149.333333 149.333333 0 0 1 0 298.666666z"/></svg>',
+          LineString:
+            '<svg class="icon" viewBox="0 0 1024 1024"><path d="M904.533333 119.466667L119.466667 904.533333l42.666666 42.666667 785.066667-785.066667z"/></svg>',
+          Polygon:
+            '<svg class="icon" viewBox="0 0 1024 1024"><path d="M834.56 955.733333H189.44c-66.56 0-121.173333-54.613333-121.173333-121.173333V189.44c0-66.56 54.613333-121.173333 121.173333-121.173333h645.12c66.56 0 121.173333 54.613333 121.173333 121.173333v645.12c0 66.56-54.613333 121.173333-121.173333 121.173333z"/></svg>',
+          Circle:
+            '<svg class="icon" viewBox="0 0 1024 1024"><path d="M512 85.333333c-235.648 0-426.666667 191.018667-426.666667 426.666667s191.018667 426.666667 426.666667 426.666667 426.666667-191.018667 426.666667-426.666667-191.018667-426.666667-426.666667-426.666667z"/></svg>',
+          MeasureLength:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M6 8v8M12 6v12M18 8v8"/></svg>',
+          MeasureArea:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+        };
+
+        const drawTypes = [
+          "Point",
+          "LineString",
+          "Polygon",
+          "Circle",
+          "MeasureLength",
+          "MeasureArea",
+        ];
+        drawTypes.forEach((type) => {
+          const button = document.createElement("button");
+          button.innerHTML = icons[type];
+          button.title = type;
+          button.addEventListener("click", () => {
+            if (type === "MeasureLength" || type === "MeasureArea") {
+              // 处理测量工具
+              if (type === "MeasureLength") {
+                addMeasurementInteraction("LineString");
+              } else {
+                addMeasurementInteraction("Polygon");
+              }
+            } else {
+              // 处理普通绘图工具
+              addInteraction(type);
+            }
+          });
+          drawControls.appendChild(button);
+        });
+
+        // 添加清除按钮
+        const clearButton = document.createElement("button");
+        clearButton.innerHTML =
+          '<svg class="icon" viewBox="0 0 1024 1024"><path d="M899.1 869.6l-53-305.6H864c14.4 0 26-11.6 26-26V346c0-14.4-11.6-26-26-26H618V138c0-14.4-11.6-26-26-26H432c-14.4 0-26 11.6-26 26v182H160c-14.4 0-26 11.6-26 26v192c0 14.4 11.6 26 26 26h17.9l-53 305.6c-0.3 1.5-0.4 3-0.4 4.4 0 14.4 11.6 26 26 26h723c1.5 0 3-0.1 4.4-0.4 14.2-2.4 23.7-15.9 21.2-30zM204 390h272V182h72v208h272v104H204V390z m468 440V674c0-4.4-3.6-8-8-8h-48c-4.4 0-8 3.6-8 8v156H416V674c0-4.4-3.6-8-8-8h-48c-4.4 0-8 3.6-8 8v156H202.8l45.1-260H776l45.1 260H672z"/></svg>';
+        clearButton.title = "清除";
+        clearButton.addEventListener("click", () => {
+          // 清除所有图形
+          source.clear();
+
+          // 清除测量结果
+          // if (measureTooltip) {
+          //   map.removeOverlay(measureTooltip);
+          //   measureTooltip = null;
+          // }
+          // if (measureTooltipElement) {
+          //   measureTooltipElement.parentNode &&
+          //     measureTooltipElement.parentNode.removeChild(
+          //       measureTooltipElement
+          //     );
+          //   measureTooltipElement = null;
+          // }
+
+          // 清除所有测量覆盖物
+          const overlays = map.getOverlays().getArray().slice();
+          overlays.forEach((overlay) => {
+            const element = overlay.getElement();
+            if (
+              element &&
+              element.className &&
+              element.className.indexOf("ol-tooltip-measure") !== -1
+            ) {
+              map.removeOverlay(overlay);
+            }
+          });
+        });
+        drawControls.appendChild(clearButton);
+
+        // 添加取消绘制按钮
+        const cancelButton = document.createElement("button");
+        cancelButton.className = "cancel-draw-btn";
+        cancelButton.innerHTML =
+          '<svg class="icon" viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m165.4 618.2l-66-0.3L512 563.4l-99.3 118.4-66.1 0.3c-4.4 0-8-3.5-8-8 0-1.9 0.7-3.7 1.9-5.2l130.1-155L340.5 359c-1.2-1.5-1.9-3.3-1.9-5.2 0-4.4 3.6-8 8-8l66.1 0.3L512 464.6l99.3-118.4 66-0.3c4.4 0 8 3.5 8 8 0 1.9-0.7 3.7-1.9 5.2L553.5 514l130 155c1.2 1.5 1.9 3.3 1.9 5.2 0 4.4-3.6 8-8 8z"/></svg>';
+        cancelButton.title = "取消绘制";
+        cancelButton.addEventListener("click", () => {
+          if (draw) {
+            map.removeInteraction(draw);
+            draw = null;
+          }
+        });
+        drawControls.appendChild(cancelButton);
+
+        // 添加重置范围按钮
+        const resetControl = document.createElement("div");
+        resetControl.className = "ol-control reset-extent";
+        const resetButton = document.createElement("button");
+        resetButton.innerHTML =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 1024 1024"><path fill="currentColor" d="M784.512 230.272v-50.56a32 32 0 1 1 64 0v149.056a32 32 0 0 1-32 32H667.52a32 32 0 1 1 0-64h92.992A320 320 0 1 0 524.8 833.152a320 320 0 0 0 320-320h64a384 384 0 0 1-384 384a384 384 0 0 1-384-384a384 384 0 0 1 643.712-282.88"/></svg>';
+        resetButton.title = "重置范围";
+        resetButton.addEventListener("click", () => {
+          map.getView().fit(initialExtent, {
+            duration: 1000,
+          });
+        });
+        resetControl.appendChild(resetButton);
+
+        map.addControl(
+          new ol.control.Control({
+            element: drawControls,
+          })
+        );
+        map.addControl(
+          new ol.control.Control({
+            element: resetControl,
+          })
+        );
+
+        // 添加测量工具相关函数
+        let measureTooltipElement;
+        let measureTooltip;
+        let sketch;
+        let measureOverlays = [];
+
+        const formatLength = function (line) {
+          const length = ol.sphere.getLength(line);
+          let output;
+          if (length > 100) {
+            output = Math.round((length / 1000) * 100) / 100 + " km";
+          } else {
+            output = Math.round(length * 100) / 100 + " m";
+          }
+          return output;
+        };
+
+        const formatArea = function (polygon) {
+          const area = ol.sphere.getArea(polygon);
+          let output;
+          if (area > 10000) {
+            output = Math.round((area / 1000000) * 100) / 100 + " km²";
+          } else {
+            output = Math.round(area * 100) / 100 + " m²";
+          }
+          return output;
+        };
+
+        function addMeasurementInteraction(type) {
+          if (draw) {
+            map.removeInteraction(draw);
+          }
+          draw = new ol.interaction.Draw({
+            source: source,
+            type: type,
+            style: new ol.style.Style({
+              fill: new ol.style.Fill({
+                color: "rgba(24, 144, 255, 0.2)",
+              }),
+              stroke: new ol.style.Stroke({
+                color: "#1890ff",
+                lineDash: [6, 6],
+                width: 2,
+              }),
+              image: new ol.style.Circle({
+                radius: 5,
+                stroke: new ol.style.Stroke({
+                  color: "#1890ff",
+                }),
+                fill: new ol.style.Fill({
+                  color: "#fff",
+                }),
+              }),
+            }),
+          });
+          map.addInteraction(draw);
+
+          draw.on("drawstart", function (evt) {
+            sketch = evt.feature;
+            let tooltipCoord = evt.coordinate;
+            createMeasureTooltip();
+
+            sketch.getGeometry().on("change", function (evt) {
+              const geom = evt.target;
+              let output;
+              if (geom instanceof ol.geom.Polygon) {
+                output = formatArea(geom);
+                tooltipCoord = geom.getInteriorPoint().getCoordinates();
+              } else if (geom instanceof ol.geom.LineString) {
+                output = formatLength(geom);
+                tooltipCoord = geom.getLastCoordinate();
+              }
+              measureTooltipElement.innerHTML = output;
+              measureTooltip.setPosition(tooltipCoord);
+            });
+          });
+
+          draw.on("drawend", function () {
+            measureTooltipElement.className =
+              "ol-tooltip ol-tooltip-static ol-tooltip-measure";
+            measureTooltip.setOffset([0, -7]);
+            // 保存当前测量覆盖物的引用
+            measureOverlays.push(measureTooltip);
+            sketch = null;
+            measureTooltipElement = null;
+            createMeasureTooltip();
+          });
+        }
+
+        function createMeasureTooltip() {
+          if (measureTooltipElement) {
+            measureTooltipElement.parentNode.removeChild(measureTooltipElement);
+          }
+          measureTooltipElement = document.createElement("div");
+          measureTooltipElement.className = "ol-tooltip ol-tooltip-measure";
+          measureTooltip = new ol.Overlay({
+            element: measureTooltipElement,
+            offset: [0, -15],
+            positioning: "bottom-center",
+          });
+          map.addOverlay(measureTooltip);
+        }
+      });
+    </script>
+  </body>
+</html>
